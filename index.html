@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Workers Deploy / 簡易デプロイツール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0b09;
+    --panel:#15130f;
+    --line:#2a251c;
+    --line-2:#3a3225;
+    --ink:#f3ead8;
+    --muted:#8d8472;
+    --accent:#f38020;
+    --accent-soft:#f3802022;
+    --ok:#7ed492;
+    --err:#ff6a55;
+    --warn:#e0c275;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.55}
+  body{
+    background:
+      radial-gradient(900px 600px at 85% -10%, #2a1a07 0%, transparent 60%),
+      radial-gradient(700px 500px at -10% 110%, #1a0f04 0%, transparent 55%),
+      var(--bg);
+    min-height:100vh;
+  }
+  .grid-bg{
+    position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      linear-gradient(var(--line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:48px 48px;
+    opacity:.07;
+    mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
+  }
+  .wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:32px 24px 80px}
+
+  /* ── Header ───────────────────────────── */
+  header{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    border-bottom:1px solid var(--line);padding-bottom:24px;margin-bottom:28px;flex-wrap:wrap;gap:16px;
+  }
+  .brand{display:flex;align-items:baseline;gap:14px}
+  .brand .mark{
+    width:38px;height:38px;border:1.5px solid var(--accent);
+    display:grid;place-items:center;color:var(--accent);font-weight:700;
+    transform:rotate(-3deg);background:var(--accent-soft);
+  }
+  h1{
+    font-family:"Fraunces",serif;font-weight:600;font-style:italic;
+    font-size:clamp(28px,4.5vw,44px);margin:0;letter-spacing:-.02em;line-height:1;
+  }
+  h1 small{
+    display:block;font-family:"JetBrains Mono",monospace;font-style:normal;font-weight:400;
+    font-size:11px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-top:6px;
+  }
+  .meta{font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;text-align:right}
+  .meta b{color:var(--accent);font-weight:500}
+
+  /* ── Layout ───────────────────────────── */
+  .columns{display:grid;grid-template-columns:1fr;gap:20px}
+  @media(min-width:960px){.columns{grid-template-columns:380px 1fr}}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--line);
+    padding:20px;position:relative;
+  }
+  .panel + .panel{margin-top:20px}
+  .panel h2{
+    margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);
+    display:flex;align-items:center;gap:10px;
+  }
+  .panel h2::before{
+    content:"";width:6px;height:6px;background:var(--accent);display:inline-block;
+  }
+  .panel h2 .tag{margin-left:auto;color:var(--accent);font-weight:500;letter-spacing:.1em}
+
+  /* ── Inputs ───────────────────────────── */
+  label{display:block;margin-bottom:14px}
+  label > span{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:10.5px;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px;
+  }
+  label .hint{color:var(--accent);text-transform:none;letter-spacing:0;cursor:help;font-size:11px}
+  input[type=text],input[type=password],textarea,select{
+    width:100%;background:#0a0907;color:var(--ink);
+    border:1px solid var(--line-2);padding:10px 12px;
+    font-family:"JetBrains Mono",monospace;font-size:13px;
+    outline:none;transition:border-color .15s,background .15s;
+  }
+  input:focus,textarea:focus,select:focus{border-color:var(--accent);background:#100c08}
+  textarea{resize:vertical;min-height:280px;line-height:1.55;tab-size:2}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  /* ── Buttons ──────────────────────────── */
+  button,.btn{
+    font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    background:transparent;color:var(--ink);border:1px solid var(--line-2);
+    padding:10px 14px;cursor:pointer;transition:all .15s;
+  }
+  button:hover,.btn:hover{border-color:var(--accent);color:var(--accent)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .btn-primary{
+    background:var(--accent);color:#1a0f04;border-color:var(--accent);font-weight:700;
+    padding:14px 18px;width:100%;font-size:13px;
+  }
+  .btn-primary:hover{background:#ff9636;border-color:#ff9636;color:#1a0f04}
+  .btn-ghost{font-size:11px;padding:6px 10px}
+
+  /* ── Templates ────────────────────────── */
+  .templates{display:flex;flex-wrap:wrap;gap:6px}
+  .templates button{font-size:11px;padding:7px 10px;letter-spacing:.08em}
+
+  /* ── Editor header ────────────────────── */
+  .editor-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    background:#0a0907;border:1px solid var(--line-2);border-bottom:none;
+    padding:8px 12px;font-size:11px;color:var(--muted);letter-spacing:.1em;
+  }
+  .editor-bar .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block;margin-right:5px}
+  .editor-bar .dot.on{background:var(--accent)}
+  .editor textarea{border-top:none;font-size:13px}
+
+  /* ── Output / log ─────────────────────── */
+  .log{
+    background:#0a0907;border:1px solid var(--line);padding:14px 16px;
+    font-size:12px;min-height:60px;max-height:340px;overflow-y:auto;
+    white-space:pre-wrap;word-break:break-all;
+  }
+  .log .line{padding:2px 0;border-bottom:1px dashed transparent}
+  .log .ts{color:var(--muted);margin-right:8px}
+  .log .ok{color:var(--ok)}
+  .log .err{color:var(--err)}
+  .log .warn{color:var(--warn)}
+  .log .info{color:var(--accent)}
+  .log:empty::before{content:"// no activity yet — credentials を入力して deploy してください.";color:var(--muted);font-style:italic}
+
+  /* ── Help drawer ──────────────────────── */
+  details{border:1px dashed var(--line-2);padding:0}
+  details summary{
+    list-style:none;cursor:pointer;padding:12px 14px;
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  details summary::-webkit-details-marker{display:none}
+  details[open] summary{color:var(--accent);border-bottom:1px dashed var(--line-2)}
+  details summary::after{content:"+";font-size:18px;color:var(--accent)}
+  details[open] summary::after{content:"−"}
+  details .body{padding:14px 16px;font-size:12.5px;color:#cfc6b1}
+  details .body code{background:#0a0907;padding:2px 6px;border:1px solid var(--line-2);font-size:11.5px;color:var(--accent)}
+  details .body ol{padding-left:18px;margin:8px 0}
+  details .body a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+
+  /* ── Status pill ──────────────────────── */
+  .status-pill{
+    display:inline-flex;align-items:center;gap:8px;font-size:11px;
+    padding:4px 10px;border:1px solid var(--line-2);color:var(--muted);
+    letter-spacing:.12em;text-transform:uppercase;
+  }
+  .status-pill.live{color:var(--ok);border-color:var(--ok)}
+  .status-pill .pulse{width:6px;height:6px;border-radius:50%;background:currentColor;animation:p 1.4s infinite}
+  @keyframes p{0%,100%{opacity:.4}50%{opacity:1}}
+
+  /* ── URL preview ──────────────────────── */
+  .url-preview{
+    background:#0a0907;border:1px solid var(--line-2);padding:10px 12px;
+    font-size:11.5px;color:var(--muted);word-break:break-all;
+  }
+  .url-preview b{color:var(--ink);font-weight:500}
+  .url-preview .acc{color:var(--accent)}
+
+  footer{
+    margin-top:40px;padding-top:20px;border-top:1px solid var(--line);
+    font-size:11px;color:var(--muted);letter-spacing:.1em;text-align:center;
+  }
+  footer .heart{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="mark">⚡</div>
+      <div>
+        <h1>Workers Deploy
+          <small>cloudflare workers · one-click upload</small>
+        </h1>
+      </div>
+    </div>
+    <div class="meta">
+      <div>edge · runtime</div>
+      <div><b>v4 API</b> / direct upload</div>
+    </div>
+  </header>
+
+  <div class="columns">
+
+    <!-- LEFT COLUMN ─────────────────────────────────────── -->
+    <div>
+      <div class="panel">
+        <h2>Credentials <span class="tag">required</span></h2>
+
+        <label>
+          <span>API Token <a class="hint" href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">取得 →</a></span>
+          <input type="password" id="token" placeholder="cf_xxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+        </label>
+
+        <label>
+          <span>Account ID</span>
+          <input type="text" id="account" placeholder="32桁の英数字 (Workersダッシュボード右側)" autocomplete="off" />
+        </label>
+
+        <label>
+          <span>Worker Name (script name)</span>
+          <input type="text" id="name" placeholder="my-worker" value="hello-worker" autocomplete="off" />
+        </label>
+
+        <label style="margin-bottom:6px">
+          <span>保存 <span class="hint" style="cursor:default">※このブラウザのみ</span></span>
+        </label>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button id="save" class="btn-ghost" type="button">credentials を保存</button>
+          <button id="clear" class="btn-ghost" type="button">クリア</button>
+        </div>
+
+        <div class="url-preview" id="urlPreview">
+          PUT https://api.cloudflare.com/client/v4/accounts/<span class="acc">{account_id}</span>/workers/scripts/<span class="acc">{name}</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Templates <span class="tag">starter code</span></h2>
+        <div class="templates">
+          <button data-tpl="hello" type="button">Hello World</button>
+          <button data-tpl="json" type="button">JSON API</button>
+          <button data-tpl="redirect" type="button">Redirect</button>
+          <button data-tpl="echo" type="button">Echo</button>
+          <button data-tpl="html" type="button">HTML Page</button>
+          <button data-tpl="random" type="button">Random Quote</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <details>
+          <summary>使い方 / How it works</summary>
+          <div class="body">
+            <ol>
+              <li><a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">My Profile → API Tokens</a> から <code>Edit Cloudflare Workers</code> テンプレートでトークンを作成。</li>
+              <li>Workers ダッシュボード右側の <code>Account ID</code> をコピー。</li>
+              <li>Worker 名(英数字とハイフン)を決めてコードを書く。</li>
+              <li><b>Deploy</b> を押すと Cloudflare API に直接 PUT されます。</li>
+              <li>成功後は <code>https://&lt;name&gt;.&lt;subdomain&gt;.workers.dev</code> でアクセス可能(workers.dev サブドメインを事前に有効化しておいてください)。</li>
+            </ol>
+            <p style="color:var(--muted);font-size:11.5px;margin-top:10px">
+              ※トークンはブラウザのみで保持されます(localStorage)。共有 PC では「クリア」を押してください。
+            </p>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN ────────────────────────────────────── -->
+    <div>
+      <div class="panel">
+        <h2>
+          Worker Script
+          <span class="status-pill" id="statusPill"><span class="pulse"></span>idle</span>
+        </h2>
+
+        <div class="editor">
+          <div class="editor-bar">
+            <div><span class="dot on"></span><span class="dot"></span><span class="dot"></span> worker.js</div>
+            <div><span id="charCount">0</span> chars</div>
+          </div>
+          <textarea id="code" spellcheck="false" placeholder="// あなたの Worker コード"></textarea>
+        </div>
+
+        <div style="margin-top:14px">
+          <button id="deploy" class="btn-primary" type="button">▲ Deploy to Cloudflare</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Output Log <button id="clearLog" class="btn-ghost" style="margin-left:auto" type="button">clear</button></h2>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    self-hosted client · all requests go directly from your browser to <b style="color:var(--accent)">api.cloudflare.com</b> · no middleman
+  </footer>
+</div>
+
+<script>
+// ── Templates ─────────────────────────────────────────
+const TEMPLATES = {
+  hello: `export default {
+  async fetch(request, env, ctx) {
+    return new Response("Hello from Cloudflare Workers! ⚡", {
+      headers: { "content-type": "text/plain; charset=utf-8" }
+    });
+  }
+};`,
+  json: `export default {
+  async fetch(request, env, ctx) {
+    const data = {
+      message: "Hello from the edge",
+      timestamp: new Date().toISOString(),
+      cf: request.cf || null,
+    };
+    return new Response(JSON.stringify(data, null, 2), {
+      headers: { "content-type": "application/json; charset=utf-8" }
+    });
+  }
+};`,
+  redirect: `export default {
+  async fetch(request, env, ctx) {
+    return Response.redirect("https://developers.cloudflare.com/workers/", 302);
+  }
+};`,
+  echo: `export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const info = {
+      method: request.method,
+      url: request.url,
+      pathname: url.pathname,
+      query: Object.fromEntries(url.searchParams),
+      headers: Object.fromEntries(request.headers),
+      cf: request.cf || null,
+    };
+    return new Response(JSON.stringify(info, null, 2), {
+      headers: { "content-type": "application/json; charset=utf-8" }
+    });
+  }
+};`,
+  html: `export default {
+  async fetch(request, env, ctx) {
+    const html = \`<!doctype html>
+<html><head><meta charset="utf-8"><title>Edge</title>
+<style>body{font-family:system-ui;background:#0c0b09;color:#f3ead8;
+display:grid;place-items:center;height:100vh;margin:0}
+h1{font-size:14vw;color:#f38020;margin:0}</style></head>
+<body><h1>⚡</h1></body></html>\`;
+    return new Response(html, {
+      headers: { "content-type": "text/html; charset=utf-8" }
+    });
+  }
+};`,
+  random: `const QUOTES = [
+  "The edge is the new origin.",
+  "Latency is the enemy of UX.",
+  "Cache everything, compute nothing.",
+  "Deploy on Friday. Live dangerously.",
+  "It's just JavaScript. Until it isn't."
+];
+export default {
+  async fetch(request, env, ctx) {
+    const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+    return new Response(JSON.stringify({ quote: q }), {
+      headers: { "content-type": "application/json; charset=utf-8" }
+    });
+  }
+};`
+};
+
+// ── Elements ──────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const tokenEl = $('token'), accountEl = $('account'), nameEl = $('name'),
+      codeEl = $('code'), logEl = $('log'), pill = $('statusPill'),
+      urlPrev = $('urlPreview'), charCount = $('charCount');
+
+// ── Storage (graceful) ────────────────────────────────
+const SKEY = 'cf-workers-deploy-v1';
+function loadCreds(){
+  try{
+    const raw = localStorage.getItem(SKEY);
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    if(s.token)tokenEl.value=s.token;
+    if(s.account)accountEl.value=s.account;
+    if(s.name)nameEl.value=s.name;
+    if(s.code)codeEl.value=s.code;
+    log('info','保存された認証情報を復元しました。');
+  }catch(e){}
+}
+function saveCreds(){
+  try{
+    localStorage.setItem(SKEY, JSON.stringify({
+      token:tokenEl.value, account:accountEl.value,
+      name:nameEl.value, code:codeEl.value
+    }));
+    log('ok','credentials を保存しました(このブラウザのみ)。');
+  }catch(e){ log('err','保存に失敗しました: '+e.message); }
+}
+function clearCreds(){
+  try{ localStorage.removeItem(SKEY); }catch(e){}
+  tokenEl.value=accountEl.value='';
+  log('warn','保存情報をクリアしました。');
+}
+
+// ── Logging ───────────────────────────────────────────
+function log(type, msg){
+  const t = new Date().toTimeString().slice(0,8);
+  const line = document.createElement('div');
+  line.className = 'line';
+  line.innerHTML = `<span class="ts">${t}</span><span class="${type}">${msg}</span>`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ── Live URL preview ──────────────────────────────────
+function updatePreview(){
+  const a = accountEl.value.trim() || '{account_id}';
+  const n = nameEl.value.trim() || '{name}';
+  urlPrev.innerHTML = `PUT https://api.cloudflare.com/client/v4/accounts/<span class="acc">${a}</span>/workers/scripts/<span class="acc">${n}</span>`;
+}
+[accountEl,nameEl].forEach(el=>el.addEventListener('input',updatePreview));
+codeEl.addEventListener('input',()=>{ charCount.textContent = codeEl.value.length; });
+
+// ── Templates ─────────────────────────────────────────
+document.querySelectorAll('[data-tpl]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const k = btn.dataset.tpl;
+    if(codeEl.value.trim() && !confirm('現在のコードを置き換えますか?')) return;
+    codeEl.value = TEMPLATES[k];
+    charCount.textContent = codeEl.value.length;
+    log('info',`template "${k}" を読み込みました。`);
+  });
+});
+
+// ── Save / Clear ──────────────────────────────────────
+$('save').addEventListener('click',saveCreds);
+$('clear').addEventListener('click',clearCreds);
+$('clearLog').addEventListener('click',()=>{ logEl.innerHTML=''; });
+
+// ── Validation ────────────────────────────────────────
+function validate(){
+  const errs = [];
+  if(!tokenEl.value.trim()) errs.push('API Token が未入力');
+  if(!accountEl.value.trim()) errs.push('Account ID が未入力');
+  if(!/^[a-z0-9]{30,40}$/i.test(accountEl.value.trim())) errs.push('Account ID の形式が不正(英数32桁前後)');
+  if(!nameEl.value.trim()) errs.push('Worker 名が未入力');
+  if(!/^[a-z0-9][a-z0-9_-]*$/i.test(nameEl.value.trim())) errs.push('Worker 名は英数字/ハイフン/アンダースコアのみ');
+  if(!codeEl.value.trim()) errs.push('コードが空です');
+  return errs;
+}
+
+// ── Deploy ────────────────────────────────────────────
+const deployBtn = $('deploy');
+deployBtn.addEventListener('click', async ()=>{
+  const errs = validate();
+  if(errs.length){
+    errs.forEach(e=>log('err','✗ '+e));
+    return;
+  }
+
+  const token = tokenEl.value.trim();
+  const account = accountEl.value.trim();
+  const name = nameEl.value.trim();
+  const code = codeEl.value;
+
+  deployBtn.disabled = true;
+  deployBtn.textContent = '◌ Deploying...';
+  pill.className = 'status-pill';
+  pill.innerHTML = '<span class="pulse"></span>deploying';
+  pill.style.color = 'var(--warn)';
+  pill.style.borderColor = 'var(--warn)';
+
+  log('info',`▲ deploying "${name}" to account ${account.slice(0,6)}…`);
+
+  // multipart/form-data with metadata + module
+  const metadata = {
+    main_module: 'worker.js',
+    compatibility_date: new Date().toISOString().slice(0,10)
+  };
+
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
+  form.append('worker.js', new Blob([code], {type:'application/javascript+module'}), 'worker.js');
+
+  const url = `https://api.cloudflare.com/client/v4/accounts/${account}/workers/scripts/${name}`;
+
+  try{
+    const t0 = performance.now();
+    const res = await fetch(url, {
+      method:'PUT',
+      headers:{ 'Authorization':'Bearer '+token },
+      body: form
+    });
+    const ms = Math.round(performance.now()-t0);
+    const data = await res.json().catch(()=>({}));
+
+    if(res.ok && data.success !== false){
+      log('ok',`✓ deployed in ${ms}ms — script "${name}" is live.`);
+      if(data.result){
+        if(data.result.modified_on) log('info','  modified_on: '+data.result.modified_on);
+        if(data.result.etag) log('info','  etag: '+data.result.etag);
+      }
+      log('info',`→ try: https://${name}.<your-subdomain>.workers.dev`);
+      pill.className = 'status-pill live';
+      pill.innerHTML = '<span class="pulse"></span>live';
+      pill.style.cssText = '';
+    }else{
+      log('err',`✗ HTTP ${res.status} — deploy failed`);
+      if(data.errors && data.errors.length){
+        data.errors.forEach(er=>log('err',`  [${er.code}] ${er.message}`));
+      }else{
+        log('err','  '+JSON.stringify(data).slice(0,400));
+      }
+      pill.className = 'status-pill';
+      pill.innerHTML = '<span class="pulse"></span>error';
+      pill.style.color = 'var(--err)';
+      pill.style.borderColor = 'var(--err)';
+    }
+  }catch(err){
+    log('err','✗ ネットワークエラー: '+err.message);
+    log('warn','  CORSやネットワーク問題の可能性があります。トークンの権限を確認してください。');
+    pill.className = 'status-pill';
+    pill.innerHTML = '<span class="pulse"></span>error';
+    pill.style.color = 'var(--err)';
+    pill.style.borderColor = 'var(--err)';
+  }finally{
+    deployBtn.disabled = false;
+    deployBtn.textContent = '▲ Deploy to Cloudflare';
+  }
+});
+
+// ── Init ──────────────────────────────────────────────
+loadCreds();
+if(!codeEl.value) codeEl.value = TEMPLATES.hello;
+charCount.textContent = codeEl.value.length;
+updatePreview();
+log('info','ready. credentials を入力して Deploy してください。');
+</script>
+</body>
+</html>
