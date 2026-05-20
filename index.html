@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root{
     --bg:#0c0b09;--panel:#15130f;--line:#2a251c;--line-2:#3a3225;
@@ -22,34 +23,24 @@
       var(--bg);
     min-height:100vh;
   }
-  .grid-bg{
-    position:fixed;inset:0;pointer-events:none;z-index:0;
-    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
-    background-size:48px 48px;opacity:.07;
-    mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
-  }
-  .wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:32px 24px 80px}
+  .grid-bg{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:48px 48px;opacity:.07;mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%)}
+  .wrap{position:relative;z-index:1;max-width:1340px;margin:0 auto;padding:32px 24px 80px}
 
   header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:24px;margin-bottom:28px;flex-wrap:wrap;gap:16px}
   .brand{display:flex;align-items:baseline;gap:14px}
   .brand .mark{width:38px;height:38px;border:1.5px solid var(--accent);display:grid;place-items:center;color:var(--accent);font-weight:700;transform:rotate(-3deg);background:var(--accent-soft)}
-  h1{font-family:"Fraunces",serif;font-weight:600;font-style:italic;font-size:clamp(28px,4.5vw,44px);margin:0;letter-spacing:-.02em;line-height:1}
+  h1{font-family:"Fraunces",serif;font-weight:600;font-style:italic;font-size:clamp(28px,4.5vw,40px);margin:0;letter-spacing:-.02em;line-height:1}
   h1 small{display:block;font-family:"JetBrains Mono",monospace;font-style:normal;font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-top:6px}
   .meta{font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;text-align:right}
   .meta b{color:var(--accent);font-weight:500}
 
-  .setup-banner{
-    background:linear-gradient(135deg, #2a1a07 0%, #1a0f04 100%);
-    border:1px solid var(--accent);position:relative;
-    padding:24px;margin-bottom:24px;
-  }
+  /* Setup banner */
+  .setup-banner{background:linear-gradient(135deg, #2a1a07 0%, #1a0f04 100%);border:1px solid var(--accent);position:relative;padding:24px;margin-bottom:24px}
   .setup-banner.done{background:#0d1208;border-color:#2a4220;padding:14px 20px}
   .setup-banner h2{margin:0 0 4px;font-family:"Fraunces",serif;font-style:italic;font-size:22px;font-weight:600;color:var(--accent)}
   .setup-banner.done h2{color:var(--ok);font-size:14px;font-style:normal;font-family:"JetBrains Mono",monospace;letter-spacing:.1em;text-transform:uppercase}
   .setup-banner p{margin:0 0 16px;font-size:12.5px;color:#cfc6b1}
-  .setup-banner.done p{display:none}
-  .setup-banner.done .setup-steps{display:none}
-
+  .setup-banner.done p,.setup-banner.done .setup-steps{display:none}
   .setup-steps{display:grid;grid-template-columns:1fr;gap:16px;margin-top:18px}
   @media(min-width:880px){.setup-steps{grid-template-columns:1fr 1fr}}
   .step{background:rgba(0,0,0,.25);border:1px solid #3a2515;padding:14px 16px}
@@ -59,53 +50,87 @@
   .step ol li{margin-bottom:4px}
   .step a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
   .step p{margin:0 0 10px;font-size:12px;color:#cfc6b1}
-
   .code-block{position:relative;margin-top:10px}
-  .code-block textarea{
-    width:100%;background:#000;color:#f3ead8;border:1px solid #3a2515;
-    font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1.5;
-    padding:10px 12px;height:170px;resize:vertical;white-space:pre;overflow:auto;
-  }
-  .code-block .copy{
-    position:absolute;top:6px;right:6px;background:var(--accent);color:#1a0f04;
-    border:none;padding:5px 10px;font-size:10px;letter-spacing:.1em;cursor:pointer;font-weight:700;
-  }
+  .code-block textarea{width:100%;background:#000;color:#f3ead8;border:1px solid #3a2515;font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1.5;padding:10px 12px;height:170px;resize:vertical;white-space:pre;overflow:auto}
+  .code-block .copy{position:absolute;top:6px;right:6px;background:var(--accent);color:#1a0f04;border:none;padding:5px 10px;font-size:10px;letter-spacing:.1em;cursor:pointer;font-weight:700}
   .code-block .copy.copied{background:var(--ok)}
 
+  /* Layout */
   .columns{display:grid;grid-template-columns:1fr;gap:20px}
-  @media(min-width:960px){.columns{grid-template-columns:380px 1fr}}
+  @media(min-width:1080px){.columns{grid-template-columns:340px 1fr}}
   .panel{background:var(--panel);border:1px solid var(--line);padding:20px;position:relative}
   .panel + .panel{margin-top:20px}
   .panel h2{margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px}
   .panel h2::before{content:"";width:6px;height:6px;background:var(--accent);display:inline-block}
   .panel h2 .tag{margin-left:auto;color:var(--accent);font-weight:500;letter-spacing:.1em}
 
+  /* Forms */
   label{display:block;margin-bottom:14px}
   label > span{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
   label .hint{color:var(--accent);text-transform:none;letter-spacing:0;cursor:help;font-size:11px}
-  input[type=text],input[type=password],textarea,select{
+  input[type=text],input[type=password],input[type=date],textarea,select{
     width:100%;background:#0a0907;color:var(--ink);border:1px solid var(--line-2);
     padding:10px 12px;font-family:"JetBrains Mono",monospace;font-size:13px;
     outline:none;transition:border-color .15s,background .15s;
   }
   input:focus,textarea:focus,select:focus{border-color:var(--accent);background:#100c08}
-  textarea{resize:vertical;min-height:280px;line-height:1.55;tab-size:2}
+  textarea{resize:vertical;line-height:1.55;tab-size:2}
 
+  /* Buttons */
   button,.btn{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:transparent;color:var(--ink);border:1px solid var(--line-2);padding:10px 14px;cursor:pointer;transition:all .15s}
   button:hover,.btn:hover{border-color:var(--accent);color:var(--accent)}
   button:disabled{opacity:.4;cursor:not-allowed}
   .btn-primary{background:var(--accent);color:#1a0f04;border-color:var(--accent);font-weight:700;padding:14px 18px;width:100%;font-size:13px}
   .btn-primary:hover{background:#ff9636;border-color:#ff9636;color:#1a0f04}
   .btn-ghost{font-size:11px;padding:6px 10px}
+  .btn-danger{border-color:var(--err);color:var(--err)}
+  .btn-danger:hover{background:rgba(255,106,85,.1);color:var(--err)}
+  .btn-row{display:flex;gap:6px;flex-wrap:wrap}
 
-  .templates{display:flex;flex-wrap:wrap;gap:6px}
-  .templates button{font-size:11px;padding:7px 10px;letter-spacing:.08em}
+  /* Tabs */
+  .tabs{display:flex;border-bottom:1px solid var(--line);margin:-20px -20px 18px;padding:0 6px;overflow-x:auto}
+  .tabs button{border:none;background:none;padding:14px 16px;font-size:11px;color:var(--muted);letter-spacing:.14em;border-bottom:2px solid transparent;text-transform:uppercase;flex-shrink:0}
+  .tabs button:hover{color:var(--ink)}
+  .tabs button.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .tabs button .count{display:inline-block;margin-left:6px;background:var(--line-2);color:var(--muted);padding:1px 6px;font-size:10px;border-radius:8px}
+  .tabs button.active .count{background:var(--accent-soft);color:var(--accent)}
+  .tab-content{display:none}
+  .tab-content.active{display:block}
 
-  .editor-bar{display:flex;align-items:center;justify-content:space-between;background:#0a0907;border:1px solid var(--line-2);border-bottom:none;padding:8px 12px;font-size:11px;color:var(--muted);letter-spacing:.1em}
-  .editor-bar .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block;margin-right:5px}
-  .editor-bar .dot.on{background:var(--accent)}
-  .editor textarea{border-top:none;font-size:13px}
+  /* File tabs */
+  .file-toolbar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+  .file-toolbar input[type=file]{display:none}
+  .file-strip{display:flex;background:#0a0907;border:1px solid var(--line-2);border-bottom:none;overflow-x:auto}
+  .file-strip .ftab{padding:8px 12px;font-size:11.5px;color:var(--muted);cursor:pointer;border-right:1px solid var(--line-2);display:flex;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap}
+  .file-strip .ftab.active{background:#15130f;color:var(--accent)}
+  .file-strip .ftab .entry{color:var(--accent);font-size:9px}
+  .file-strip .ftab .del{color:var(--muted);font-size:14px;line-height:1;padding:0 2px;border:none;background:none;cursor:pointer}
+  .file-strip .ftab .del:hover{color:var(--err)}
+  .file-strip:empty{display:none}
+  .editor textarea{border-top:none;font-size:13px;min-height:340px;border:1px solid var(--line-2)}
+  .editor .binary-note{padding:30px;text-align:center;color:var(--muted);font-size:12px;border:1px solid var(--line-2);background:#0a0907;border-top:none}
 
+  /* List items (bindings/secrets/domains/routes) */
+  .item-list{display:flex;flex-direction:column;gap:8px}
+  .item{background:#0a0907;border:1px solid var(--line-2);padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .item .type-badge{font-size:10px;color:var(--accent);background:var(--accent-soft);padding:2px 8px;letter-spacing:.1em;text-transform:uppercase}
+  .item .name{font-weight:700;color:var(--ink);font-size:13px}
+  .item .detail{font-size:11.5px;color:var(--muted);flex:1;word-break:break-all;min-width:120px}
+  .item .actions{display:flex;gap:6px;margin-left:auto}
+  .item-list:empty::before{content:"// 何も登録されていません";color:var(--muted);font-style:italic;font-size:12px;padding:8px 0;display:block}
+
+  /* Modal for add form */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--accent);max-width:520px;width:100%;max-height:90vh;overflow-y:auto;padding:24px;position:relative}
+  .modal h3{margin:0 0 16px;font-family:"Fraunces",serif;font-style:italic;font-size:22px;color:var(--accent)}
+  .modal .close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 8px}
+  .modal .close:hover{color:var(--err)}
+  .modal .field-group{display:none}
+  .modal .field-group.active{display:block}
+  .modal .submit-row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+  /* Editor / log */
   .log{background:#0a0907;border:1px solid var(--line);padding:14px 16px;font-size:12px;min-height:60px;max-height:340px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
   .log .line{padding:2px 0}
   .log .ts{color:var(--muted);margin-right:8px}
@@ -117,13 +142,15 @@
   .status-pill .pulse{width:6px;height:6px;border-radius:50%;background:currentColor;animation:p 1.4s infinite}
   @keyframes p{0%,100%{opacity:.4}50%{opacity:1}}
 
-  .url-preview{background:#0a0907;border:1px solid var(--line-2);padding:10px 12px;font-size:11.5px;color:var(--muted);word-break:break-all}
-  .url-preview .acc{color:var(--accent)}
-
   .deploy-section{transition:opacity .25s}
   .deploy-section.disabled{opacity:.32;pointer-events:none;filter:saturate(.3)}
 
-  details{border:1px dashed var(--line-2);padding:0}
+  .toggle-setup{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--ok);color:var(--ok);padding:4px 10px;font-size:10px;letter-spacing:.1em;cursor:pointer}
+  .toggle-setup:hover{background:rgba(126,212,146,.1)}
+
+  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  details{border:1px dashed var(--line-2);padding:0;margin-top:10px}
   details summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
   details summary::-webkit-details-marker{display:none}
   details[open] summary{color:var(--accent);border-bottom:1px dashed var(--line-2)}
@@ -132,8 +159,9 @@
   details .body{padding:14px 16px;font-size:12.5px;color:#cfc6b1}
   details .body code{background:#0a0907;padding:2px 6px;border:1px solid var(--line-2);font-size:11.5px;color:var(--accent)}
 
-  .toggle-setup{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--ok);color:var(--ok);padding:4px 10px;font-size:10px;letter-spacing:.1em;cursor:pointer}
-  .toggle-setup:hover{background:rgba(126,212,146,.1)}
+  .section-label{font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin:18px 0 10px;display:flex;align-items:center;gap:10px}
+  .section-label::before{content:"";flex:1;height:1px;background:var(--line)}
+  .section-label::after{content:"";flex:1;height:1px;background:var(--line)}
 
   footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);letter-spacing:.1em;text-align:center}
 </style>
@@ -145,44 +173,47 @@
   <header>
     <div class="brand">
       <div class="mark">⚡</div>
-      <div><h1>Workers Deploy <small>cloudflare workers &middot; single file</small></h1></div>
+      <div><h1>Workers Deploy <small>cloudflare workers &middot; full control</small></h1></div>
     </div>
     <div class="meta"><div>edge &middot; runtime</div><div><b>v4 API</b></div></div>
   </header>
 
-  <!-- ─── SETUP WIZARD ─────────────────────────────────── -->
+  <!-- SETUP WIZARD -->
   <div class="setup-banner" id="setupBanner">
     <h2>初回セットアップ (1回だけ)</h2>
-    <p>Cloudflare API はブラウザから直接叩けない仕様(CORS 非対応)なので、橋渡し用の Worker を <b>1 個だけ</b>立てます。<br>
-    この作業は<b>最初の1回だけ</b>。以降このページから何個でも別の Worker をデプロイできるようになります。</p>
+    <p>Cloudflare API はブラウザから直接叩けないため、橋渡し用 Worker を <b>1 個だけ</b> 立てます。<br>
+    最初の1回だけの作業で、以降このページから何個でも別の Worker をデプロイ・設定できます。</p>
 
     <div class="setup-steps">
       <div class="step">
-        <h3><span class="num">1</span>自動生成されたパスワード</h3>
-        <p>第三者にプロキシを使われないようにする合言葉。<b>自動生成済み</b>なので入力不要、下のコードに埋め込み済みです。</p>
+        <h3><span class="num">1</span>PROXY_SECRET の値</h3>
+        <p>これは Cloudflare の Worker に <b>シークレット</b> として登録する値です(コードには含まれません)。</p>
         <div style="display:flex;gap:6px">
-          <input type="text" id="setupPassword" readonly autocomplete="off" style="flex:1;font-family:'JetBrains Mono',monospace;letter-spacing:.04em" />
-          <button id="regenPassword" type="button" title="新しいパスワードを生成" style="padding:10px 14px">↻</button>
+          <input type="text" id="setupPassword" readonly autocomplete="off" style="flex:1;letter-spacing:.04em" />
+          <button id="copyPassword" type="button" title="コピー" style="padding:10px 14px">copy</button>
+          <button id="regenPassword" type="button" title="再生成" style="padding:10px 14px">↻</button>
         </div>
-        <p style="margin-top:8px;font-size:11px;color:var(--muted)">↻ で再生成できます(再生成後はコードを再コピー & 再デプロイが必要)</p>
+        <p style="margin-top:8px;font-size:11px;color:var(--muted)">後で Worker の Settings → Variables and Secrets → Secret 変数として登録します</p>
       </div>
-
       <div class="step">
-        <h3><span class="num">2</span>コードをコピーして Cloudflare に貼る</h3>
-        <ol>
-          <li><a href="https://dash.cloudflare.com" target="_blank" rel="noopener">dash.cloudflare.com</a> → <b>Workers & Pages</b> → <b>Create</b></li>
-          <li>"Hello World" テンプレで <b>Deploy</b></li>
-          <li><b>Edit code</b> → 全消し → 下のコードを貼り付け → <b>Save and deploy</b></li>
-        </ol>
+        <h3><span class="num">2</span>プロキシコード (汎用)</h3>
+        <p>SECRET 値は埋め込まれません。コードはそのまま貼り付けるだけ。</p>
         <div class="code-block">
           <textarea id="proxyCode" readonly spellcheck="false"></textarea>
           <button class="copy" id="copyCode" type="button">copy</button>
         </div>
       </div>
-
       <div class="step" style="grid-column:1/-1">
-        <h3><span class="num">3</span>デプロイした Worker の URL を貼ってテスト</h3>
-        <p>Cloudflare の画面上部に出る <code style="background:#000;padding:2px 6px;font-size:11px">xxxxx.&lt;your-name&gt;.workers.dev</code> を貼り付けてください。</p>
+        <h3><span class="num">3</span>Cloudflare 側の作業</h3>
+        <ol>
+          <li><a href="https://dash.cloudflare.com" target="_blank" rel="noopener">dash.cloudflare.com</a> → <b>Workers & Pages</b> → <b>Create</b> → "Hello World" → <b>Deploy</b></li>
+          <li><b>Edit code</b> → 全消し → 上の<b>コード</b>を貼り付け → <b>Save and deploy</b></li>
+          <li>Worker のトップに戻り → <b>Settings</b> タブ → <b>Variables and Secrets</b> → <b>Add variable</b><br>
+              &nbsp;&nbsp;Type: <b>Secret</b> / Variable name: <b>PROXY_SECRET</b> / Value: 上の<b>PROXY_SECRET 値</b> → <b>Deploy</b></li>
+        </ol>
+      </div>
+      <div class="step" style="grid-column:1/-1">
+        <h3><span class="num">4</span>URL を貼ってテスト</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <input type="text" id="setupUrl" placeholder="https://your-proxy.your-name.workers.dev" autocomplete="off" style="flex:1;min-width:280px" />
           <button id="testProxy" type="button" style="padding:10px 18px">テスト接続</button>
@@ -192,77 +223,141 @@
     </div>
   </div>
 
-  <!-- ─── DEPLOY UI ────────────────────────────────────── -->
+  <!-- DEPLOY SECTION -->
   <div class="deploy-section disabled" id="deploySection">
   <div class="columns">
 
+    <!-- LEFT: Credentials + Worker config -->
     <div>
       <div class="panel">
         <h2>Credentials <span class="tag">required</span></h2>
-
         <label>
           <span>API Token <a class="hint" href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">取得 →</a></span>
-          <input type="password" id="token" placeholder="cf_xxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+          <input type="password" id="token" placeholder="cf_xxxxxx..." autocomplete="off" />
         </label>
-
         <label>
           <span>Account ID</span>
           <input type="text" id="account" placeholder="32桁の英数字" autocomplete="off" />
         </label>
+        <div class="btn-row" style="margin-top:10px">
+          <button id="saveCreds" class="btn-ghost" type="button">save</button>
+          <button id="clearCreds" class="btn-ghost" type="button">clear</button>
+        </div>
+      </div>
 
+      <div class="panel">
+        <h2>Worker</h2>
         <label>
-          <span>Worker Name (script name)</span>
+          <span>Script Name</span>
           <input type="text" id="name" placeholder="my-worker" value="hello-worker" autocomplete="off" />
         </label>
-
-        <div style="display:flex;gap:8px;margin-bottom:10px">
-          <button id="save" class="btn-ghost" type="button">credentials を保存</button>
-          <button id="clear" class="btn-ghost" type="button">クリア</button>
-        </div>
-
-        <div class="url-preview" id="urlPreview"></div>
+        <label>
+          <span>Compatibility Date</span>
+          <input type="date" id="compatDate" />
+        </label>
       </div>
 
       <div class="panel">
-        <h2>Templates <span class="tag">starter code</span></h2>
-        <div class="templates">
-          <button data-tpl="hello" type="button">Hello World</button>
-          <button data-tpl="json" type="button">JSON API</button>
-          <button data-tpl="redirect" type="button">Redirect</button>
+        <h2>Quick Templates</h2>
+        <div class="btn-row">
+          <button data-tpl="hello" type="button">Hello</button>
+          <button data-tpl="json" type="button">JSON</button>
           <button data-tpl="echo" type="button">Echo</button>
-          <button data-tpl="html" type="button">HTML Page</button>
-          <button data-tpl="random" type="button">Random Quote</button>
+          <button data-tpl="html" type="button">HTML</button>
+          <button data-tpl="env" type="button">Env+Secrets</button>
         </div>
-      </div>
-
-      <div class="panel">
-        <details>
-          <summary>API Token の作り方</summary>
-          <div class="body">
-            <ol style="padding-left:18px;margin:0">
-              <li><a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">My Profile → API Tokens</a></li>
-              <li><b>Create Token</b> → <code>Edit Cloudflare Workers</code> テンプレ</li>
-              <li>Account Resources で対象アカウントを選んで作成</li>
-              <li>Account ID は Workers ダッシュボード右側に表示</li>
-            </ol>
-          </div>
-        </details>
       </div>
     </div>
 
+    <!-- RIGHT: Tabbed content + Deploy + Log -->
     <div>
-      <div class="panel">
-        <h2>Worker Script <span class="status-pill" id="statusPill"><span class="pulse"></span>idle</span></h2>
-        <div class="editor">
-          <div class="editor-bar">
-            <div><span class="dot on"></span><span class="dot"></span><span class="dot"></span> worker.js</div>
-            <div><span id="charCount">0</span> chars</div>
+      <div class="panel" style="overflow:hidden">
+        <div class="tabs">
+          <button data-tab="code" class="active" type="button">Code <span class="count" id="filesCount">1</span></button>
+          <button data-tab="bindings" type="button">Bindings <span class="count" id="bindingsCount">0</span></button>
+          <button data-tab="secrets" type="button">Secrets <span class="count" id="secretsCount">?</span></button>
+          <button data-tab="domains" type="button">Domains</button>
+        </div>
+
+        <!-- CODE TAB -->
+        <div class="tab-content active" data-tab-content="code">
+          <div class="file-toolbar">
+            <button id="addFile" type="button">+ ファイル追加</button>
+            <button id="addZip" type="button">+ ZIP 展開</button>
+            <button id="newFile" type="button">+ 新規空ファイル</button>
+            <input type="file" id="fileInput" multiple />
+            <input type="file" id="zipInput" accept=".zip,application/zip,application/x-zip-compressed" />
           </div>
-          <textarea id="code" spellcheck="false"></textarea>
+          <div class="file-strip" id="fileStrip"></div>
+          <div class="editor">
+            <textarea id="editor" spellcheck="false" placeholder="// アクティブファイルの内容"></textarea>
+            <div id="binaryNote" class="binary-note" style="display:none"></div>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--muted)">
+            エントリーポイント: <b id="entryName" style="color:var(--accent)">worker.js</b>
+            <button id="setEntry" class="btn-ghost" style="margin-left:8px" type="button">現在のファイルをエントリにする</button>
+          </div>
         </div>
-        <div style="margin-top:14px">
-          <button id="deploy" class="btn-primary" type="button">▲ Deploy to Cloudflare</button>
+
+        <!-- BINDINGS TAB -->
+        <div class="tab-content" data-tab-content="bindings">
+          <div class="btn-row" style="margin-bottom:12px">
+            <button id="addBinding" type="button">+ バインディング追加</button>
+          </div>
+          <p style="font-size:11.5px;color:var(--muted);margin:0 0 12px">
+            KV / R2 / D1 / Service / 環境変数 などをここで設定。デプロイ時に Worker に紐付けされます。<br>
+            <b style="color:var(--accent)">注意:</b> リソース ID は事前に Cloudflare ダッシュボードで作成して取得してください。
+          </p>
+          <div class="item-list" id="bindingsList"></div>
         </div>
+
+        <!-- SECRETS TAB -->
+        <div class="tab-content" data-tab-content="secrets">
+          <div class="btn-row" style="margin-bottom:12px">
+            <button id="addSecret" type="button">+ シークレット追加</button>
+            <button id="refreshSecrets" class="btn-ghost" type="button">↻ 一覧を取得</button>
+          </div>
+          <p style="font-size:11.5px;color:var(--muted);margin:0 0 12px">
+            シークレットはデプロイとは独立。追加すると即時 Cloudflare に登録されます。<br>
+            <b style="color:var(--accent)">注意:</b> 取得 / 追加には <b>Account ID</b> と <b>Worker Name</b> が必要。Worker は事前に1度はデプロイされている必要があります。
+          </p>
+          <div class="item-list" id="secretsList"></div>
+        </div>
+
+        <!-- DOMAINS TAB -->
+        <div class="tab-content" data-tab-content="domains">
+          <div class="section-label">workers.dev サブドメイン</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+            <label style="display:inline-flex;align-items:center;gap:8px;margin:0">
+              <input type="checkbox" id="subdomainEnabled" style="width:auto" />
+              <span style="font-size:13px;color:var(--ink);text-transform:none;letter-spacing:normal">有効化する</span>
+            </label>
+            <button id="applySubdomain" type="button">適用</button>
+            <button id="checkSubdomain" class="btn-ghost" type="button">現状確認</button>
+          </div>
+          <div id="subdomainStatus" style="font-size:11.5px;color:var(--muted);min-height:16px"></div>
+
+          <div class="section-label">カスタムドメイン</div>
+          <div class="btn-row" style="margin-bottom:10px">
+            <button id="addCustomDomain" type="button">+ カスタムドメイン</button>
+            <button id="refreshCustomDomains" class="btn-ghost" type="button">↻ 一覧を取得</button>
+          </div>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 10px">Worker をオリジンとして example.com など独自ドメインに紐付け</p>
+          <div class="item-list" id="customDomainsList"></div>
+
+          <div class="section-label">ルート (Routes)</div>
+          <div class="btn-row" style="margin-bottom:10px">
+            <button id="addRoute" type="button">+ ルート</button>
+            <button id="refreshRoutes" class="btn-ghost" type="button">↻ 一覧を取得</button>
+          </div>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 10px">URL パターン (例 example.com/api/*) に Worker をマウント</p>
+          <div class="item-list" id="routesList"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Deploy <span class="status-pill" id="statusPill"><span class="pulse"></span>idle</span></h2>
+        <button id="deploy" class="btn-primary" type="button">▲ Deploy to Cloudflare</button>
       </div>
 
       <div class="panel">
@@ -270,17 +365,30 @@
         <div class="log" id="log"></div>
       </div>
     </div>
-
   </div>
   </div>
 
-  <footer>self-hosted client &middot; all requests route through your own proxy Worker &middot; no third party</footer>
+  <footer>self-hosted client &middot; all requests route through your own proxy Worker</footer>
+</div>
+
+<!-- ─── MODAL for add forms ─── -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="close" id="modalClose" type="button">×</button>
+    <h3 id="modalTitle">追加</h3>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <script>
+// ──────────────────────────────────────────────────────────────
+// PROXY TEMPLATE & WORKER TEMPLATES
+// ──────────────────────────────────────────────────────────────
 const PROXY_TEMPLATE = [
-  '// workers-deploy CORS proxy (generated)',
-  'const SECRET = "__PASSWORD__";',
+  '// workers-deploy CORS proxy',
+  '// PROXY_SECRET は Cloudflare のシークレットとして設定:',
+  '//   Worker → Settings → Variables and Secrets → Add variable',
+  '//   Name: PROXY_SECRET / Type: Secret / Value: (生成されたパスワード)',
   '',
   'const CORS = {',
   '  "Access-Control-Allow-Origin": "*",',
@@ -290,11 +398,16 @@ const PROXY_TEMPLATE = [
   '};',
   '',
   'export default {',
-  '  async fetch(request) {',
+  '  async fetch(request, env) {',
   '    if (request.method === "OPTIONS") {',
   '      return new Response(null, { headers: CORS });',
   '    }',
-  '    if (request.headers.get("X-Proxy-Secret") !== SECRET) {',
+  '    if (!env.PROXY_SECRET) {',
+  '      return new Response("PROXY_SECRET not set. Add it in Worker Settings.", {',
+  '        status: 500, headers: CORS',
+  '      });',
+  '    }',
+  '    if (request.headers.get("X-Proxy-Secret") !== env.PROXY_SECRET) {',
   '      return new Response("Forbidden", { status: 403, headers: CORS });',
   '    }',
   '    const url = new URL(request.url);',
@@ -317,50 +430,116 @@ const PROXY_TEMPLATE = [
 
 const TEMPLATES = {
   hello: 'export default {\n  async fetch(request, env, ctx) {\n    return new Response("Hello from Cloudflare Workers! \u26a1", {\n      headers: { "content-type": "text/plain; charset=utf-8" }\n    });\n  }\n};',
-  json: 'export default {\n  async fetch(request, env, ctx) {\n    const data = {\n      message: "Hello from the edge",\n      timestamp: new Date().toISOString(),\n      cf: request.cf || null,\n    };\n    return new Response(JSON.stringify(data, null, 2), {\n      headers: { "content-type": "application/json; charset=utf-8" }\n    });\n  }\n};',
-  redirect: 'export default {\n  async fetch(request, env, ctx) {\n    return Response.redirect("https://developers.cloudflare.com/workers/", 302);\n  }\n};',
-  echo: 'export default {\n  async fetch(request, env, ctx) {\n    const url = new URL(request.url);\n    const info = {\n      method: request.method,\n      url: request.url,\n      pathname: url.pathname,\n      query: Object.fromEntries(url.searchParams),\n      headers: Object.fromEntries(request.headers),\n    };\n    return new Response(JSON.stringify(info, null, 2), {\n      headers: { "content-type": "application/json; charset=utf-8" }\n    });\n  }\n};',
-  html: 'export default {\n  async fetch(request, env, ctx) {\n    const html = \'<!doctype html><html><head><meta charset="utf-8"><title>Edge</title><style>body{font-family:system-ui;background:#0c0b09;color:#f3ead8;display:grid;place-items:center;height:100vh;margin:0}h1{font-size:14vw;color:#f38020;margin:0}</style></head><body><h1>\u26a1</h1></body></html>\';\n    return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });\n  }\n};',
-  random: 'const QUOTES = [\n  "The edge is the new origin.",\n  "Latency is the enemy of UX.",\n  "Cache everything, compute nothing.",\n];\nexport default {\n  async fetch() {\n    const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];\n    return new Response(JSON.stringify({ quote: q }), {\n      headers: { "content-type": "application/json; charset=utf-8" }\n    });\n  }\n};'
+  json: 'export default {\n  async fetch(request, env, ctx) {\n    return new Response(JSON.stringify({\n      message: "Hello from the edge",\n      timestamp: new Date().toISOString()\n    }, null, 2), {\n      headers: { "content-type": "application/json; charset=utf-8" }\n    });\n  }\n};',
+  echo: 'export default {\n  async fetch(request) {\n    const url = new URL(request.url);\n    return new Response(JSON.stringify({\n      method: request.method,\n      url: request.url,\n      pathname: url.pathname,\n      headers: Object.fromEntries(request.headers),\n    }, null, 2), { headers: { "content-type": "application/json" } });\n  }\n};',
+  html: 'export default {\n  async fetch() {\n    return new Response("<!doctype html><html><body><h1>Hello</h1></body></html>", {\n      headers: { "content-type": "text/html; charset=utf-8" }\n    });\n  }\n};',
+  env: '// Access bindings & secrets via env\nexport default {\n  async fetch(request, env, ctx) {\n    return new Response(JSON.stringify({\n      // 環境変数 (plain_text binding)\n      version: env.APP_VERSION || null,\n      // シークレット (Secrets タブで登録)\n      hasApiKey: !!env.API_KEY,\n      // KV namespace usage:\n      // const value = await env.MY_KV.get("key");\n      // R2 bucket usage:\n      // const obj = await env.MY_BUCKET.get("file.txt");\n      // D1 usage:\n      // const result = await env.DB.prepare("SELECT * FROM users").all();\n    }, null, 2), { headers: { "content-type": "application/json" } });\n  }\n};'
 };
 
-const $ = function(i){ return document.getElementById(i); };
-const setupBanner=$('setupBanner'), setupPassword=$('setupPassword'),
-      regenPassword=$('regenPassword'),
-      proxyCode=$('proxyCode'), copyCode=$('copyCode'),
-      setupUrl=$('setupUrl'), testProxy=$('testProxy'), setupResult=$('setupResult'),
-      deploySection=$('deploySection'),
-      tokenEl=$('token'), accountEl=$('account'), nameEl=$('name'),
-      codeEl=$('code'), logEl=$('log'), pill=$('statusPill'),
-      urlPrev=$('urlPreview'), charCount=$('charCount');
+// ──────────────────────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────────────────────
+const SKEY = 'cf-workers-deploy-v5';
+const state = {
+  password: '',
+  proxyUrl: '',
+  setupDone: false,
+  token: '',
+  account: '',
+  name: 'hello-worker',
+  compatDate: new Date().toISOString().slice(0,10),
+  files: [{ name:'worker.js', content: TEMPLATES.hello, isEntry:true, ctype:'application/javascript+module', binary:false }],
+  activeFile: 'worker.js',
+  bindings: [],
+  // remote-fetched, not persisted
+  remoteSecrets: null,
+  remoteCustomDomains: null,
+  remoteRoutes: null,
+  zones: null,
+};
 
-const SKEY = 'cf-workers-deploy-v3';
 function loadState(){
   try{
     const s = JSON.parse(localStorage.getItem(SKEY) || '{}');
-    if(s.password) setupPassword.value = s.password;
-    if(s.proxyUrl) setupUrl.value = s.proxyUrl;
-    if(s.token) tokenEl.value = s.token;
-    if(s.account) accountEl.value = s.account;
-    if(s.name) nameEl.value = s.name;
-    if(s.code) codeEl.value = s.code;
-    if(s.setupDone) markSetupDone();
+    Object.assign(state, s);
+    if(!state.files || !state.files.length) state.files = [{ name:'worker.js', content:TEMPLATES.hello, isEntry:true, ctype:'application/javascript+module', binary:false }];
+    if(!state.bindings) state.bindings = [];
+    if(!state.compatDate) state.compatDate = new Date().toISOString().slice(0,10);
+    if(!state.activeFile) state.activeFile = state.files[0].name;
   }catch(e){}
 }
-function saveState(extra){
+function saveState(){
   try{
-    const cur = JSON.parse(localStorage.getItem(SKEY) || '{}');
-    const next = Object.assign(cur, {
-      password: setupPassword.value, proxyUrl: setupUrl.value,
-      token: tokenEl.value, account: accountEl.value,
-      name: nameEl.value, code: codeEl.value
-    }, extra || {});
-    localStorage.setItem(SKEY, JSON.stringify(next));
-  }catch(e){}
+    const toSave = {
+      password: state.password, proxyUrl: state.proxyUrl, setupDone: state.setupDone,
+      token: state.token, account: state.account, name: state.name, compatDate: state.compatDate,
+      files: state.files.map(f => f.binary ? null : f).filter(Boolean), // skip binary files (large)
+      activeFile: state.activeFile, bindings: state.bindings
+    };
+    localStorage.setItem(SKEY, JSON.stringify(toSave));
+  }catch(e){ console.warn('save failed', e); }
 }
 
+// ──────────────────────────────────────────────────────────────
+// ELEMENTS
+// ──────────────────────────────────────────────────────────────
+const $ = (i)=> document.getElementById(i);
+const setupBanner=$('setupBanner'), setupPassword=$('setupPassword'), regenPassword=$('regenPassword'),
+      proxyCode=$('proxyCode'), copyCode=$('copyCode'),
+      setupUrl=$('setupUrl'), testProxy=$('testProxy'), setupResult=$('setupResult'),
+      deploySection=$('deploySection'),
+      tokenEl=$('token'), accountEl=$('account'), nameEl=$('name'), compatDateEl=$('compatDate'),
+      editor=$('editor'), binaryNote=$('binaryNote'),
+      fileStrip=$('fileStrip'), entryName=$('entryName'),
+      bindingsList=$('bindingsList'), secretsList=$('secretsList'),
+      customDomainsList=$('customDomainsList'), routesList=$('routesList'),
+      subdomainEnabled=$('subdomainEnabled'), subdomainStatus=$('subdomainStatus'),
+      logEl=$('log'), pill=$('statusPill'),
+      modal=$('modal'), modalTitle=$('modalTitle'), modalBody=$('modalBody'), modalClose=$('modalClose');
+
+// ──────────────────────────────────────────────────────────────
+// LOGGING
+// ──────────────────────────────────────────────────────────────
+function log(type, msg){
+  const t = new Date().toTimeString().slice(0,8);
+  const line = document.createElement('div');
+  line.className = 'line';
+  line.innerHTML = '<span class="ts">'+t+'</span><span class="'+type+'">'+escapeHtml(msg)+'</span>';
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
+
+// ──────────────────────────────────────────────────────────────
+// API HELPER (all calls go through the proxy)
+// ──────────────────────────────────────────────────────────────
+async function api(path, opts){
+  opts = opts || {};
+  if(!state.proxyUrl) throw new Error('プロキシ URL が未設定');
+  if(!state.password) throw new Error('プロキシパスワードが未設定');
+  if(!state.token) throw new Error('API Token 未設定');
+  const url = state.proxyUrl.replace(/\/$/,'') + path;
+  const headers = Object.assign({
+    'Authorization': 'Bearer ' + state.token,
+    'X-Proxy-Secret': state.password,
+  }, opts.headers || {});
+  if(opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData) && !(opts.body instanceof Blob)){
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  const res = await fetch(url, Object.assign({}, opts, { headers }));
+  const data = await res.json().catch(()=>({ success:false, errors:[{ code:0, message:'Invalid JSON response, HTTP '+res.status }] }));
+  if(!res.ok || data.success === false){
+    const err = (data.errors && data.errors[0]) || { code:0, message:'HTTP '+res.status };
+    throw new Error('['+err.code+'] '+err.message);
+  }
+  return data;
+}
+
+// ──────────────────────────────────────────────────────────────
+// SETUP WIZARD
+// ──────────────────────────────────────────────────────────────
 function generatePassword(){
-  // crypto-safe random, only ASCII alphanumeric (no special chars → no escaping issues)
   const arr = new Uint8Array(24);
   crypto.getRandomValues(arr);
   const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
@@ -368,219 +547,752 @@ function generatePassword(){
   for(let i=0;i<arr.length;i++) s += ALPHA[arr[i] % ALPHA.length];
   return s;
 }
-
 function regenProxyCode(){
-  const p = setupPassword.value.trim();
-  if(!p) return;
-  proxyCode.value = PROXY_TEMPLATE.replace('__PASSWORD__', p);
+  proxyCode.value = PROXY_TEMPLATE;
 }
-regenPassword.addEventListener('click', function(){
-  if(!confirm('新しいパスワードを生成しますか?\n生成後はコードを再コピー & Worker を再デプロイする必要があります。')) return;
-  setupPassword.value = generatePassword();
-  regenProxyCode();
-  saveState({ setupDone:false });
-  // also reset the deploy section if it was unlocked
+regenPassword.addEventListener('click', ()=>{
+  if(!confirm('新しいパスワード値を生成しますか?\n生成後は Cloudflare の PROXY_SECRET シークレット値を更新する必要があります(コード再デプロイは不要)。')) return;
+  state.password = generatePassword();
+  setupPassword.value = state.password;
+  state.setupDone = false;
+  saveState();
   deploySection.classList.add('disabled');
-  setupResult.innerHTML = '<span style="color:var(--warn)">新パスワードを生成しました。コードを再コピーして Worker に貼り直してください。</span>';
+  setupBanner.classList.remove('done');
+  setupResult.innerHTML = '<span style="color:var(--warn)">新パスワード生成。Cloudflare の Settings → Variables and Secrets で PROXY_SECRET の値を更新してください。</span>';
 });
-
-copyCode.addEventListener('click', async function(){
-  try{
-    await navigator.clipboard.writeText(proxyCode.value);
-  }catch(e){
-    proxyCode.select(); document.execCommand('copy');
-  }
+copyCode.addEventListener('click', async ()=>{
+  try{ await navigator.clipboard.writeText(proxyCode.value); }
+  catch(e){ proxyCode.select(); document.execCommand('copy'); }
   copyCode.textContent = 'copied ✓';
   copyCode.classList.add('copied');
-  setTimeout(function(){ copyCode.textContent='copy'; copyCode.classList.remove('copied'); }, 1800);
+  setTimeout(()=>{ copyCode.textContent='copy'; copyCode.classList.remove('copied'); }, 1800);
 });
-
-testProxy.addEventListener('click', async function(){
+$('copyPassword').addEventListener('click', async ()=>{
+  try{ await navigator.clipboard.writeText(setupPassword.value); }
+  catch(e){ setupPassword.select(); document.execCommand('copy'); }
+  const btn = $('copyPassword');
+  btn.textContent = '✓';
+  setTimeout(()=>{ btn.textContent = 'copy'; }, 1500);
+});
+testProxy.addEventListener('click', async ()=>{
   const url = setupUrl.value.trim().replace(/\/$/,'');
   const pass = setupPassword.value.trim();
-  if(!url){
-    setupResult.innerHTML = '<span style="color:var(--err)">URL を入れてください</span>';
-    return;
-  }
-  if(!pass){
-    setupResult.innerHTML = '<span style="color:var(--err)">パスワードが空です。↻ ボタンで生成してください</span>';
-    return;
-  }
-  if(!/^https:\/\/.+/.test(url)){
-    setupResult.innerHTML = '<span style="color:var(--err)">https:// で始まる URL を入れてください</span>';
-    return;
-  }
+  if(!url){ setupResult.innerHTML = '<span style="color:var(--err)">URL を入れてください</span>'; return; }
+  if(!/^https:\/\/.+/.test(url)){ setupResult.innerHTML = '<span style="color:var(--err)">https:// で始まる URL を入れてください</span>'; return; }
   setupResult.innerHTML = '<span style="color:var(--warn)">テスト中…</span>';
   testProxy.disabled = true;
   try{
-    const res = await fetch(url + '/user/tokens/verify', {
-      method:'GET',
-      headers:{ 'X-Proxy-Secret': pass }
-    });
-    if(res.status === 403){
-      setupResult.innerHTML =
-        '<div style="color:var(--err);line-height:1.6">'+
-        '✗ <b>403 Forbidden</b> — プロキシは応答していますが、SECRET が一致していません。<br>'+
-        '<span style="color:var(--muted);font-size:11px">原因のほぼ確実な対処:</span><br>'+
-        '<span style="font-size:11.5px">1. <b>copy</b> ボタンを押し直して最新コードをコピー<br>'+
-        '2. Cloudflare で対象 Worker を開き → <b>Edit code</b> → 中身を全消し<br>'+
-        '3. もう一度貼り付け → <b>Save and deploy</b><br>'+
-        '4. このページに戻って <b>テスト接続</b> を再押下</span>'+
-        '</div>';
+    const res = await fetch(url + '/user/tokens/verify', { headers:{ 'X-Proxy-Secret': pass } });
+    if(res.status === 500){
+      const txt = await res.text().catch(()=>'');
+      if(/PROXY_SECRET/.test(txt)){
+        setupResult.innerHTML = '<div style="color:var(--err);line-height:1.6">✗ <b>PROXY_SECRET シークレットが未設定</b><br><span style="font-size:11.5px">Cloudflare の対象 Worker → <b>Settings</b> → <b>Variables and Secrets</b> → <b>Add variable</b><br>Type: <b>Secret</b> / Name: <b>PROXY_SECRET</b> / Value: 上の値 → <b>Deploy</b></span></div>';
+      }else{
+        setupResult.innerHTML = '<span style="color:var(--err)">✗ HTTP 500: '+escapeHtml(txt.slice(0,200))+'</span>';
+      }
+    }else if(res.status === 403){
+      setupResult.innerHTML = '<div style="color:var(--err);line-height:1.6">✗ <b>403 — PROXY_SECRET 値が一致しません</b><br><span style="font-size:11.5px">Cloudflare の Settings → Variables and Secrets で <b>PROXY_SECRET</b> の値を確認・更新してください。値は上の <b>PROXY_SECRET の値</b> と完全一致である必要があります。</span></div>';
     }else if(res.ok || res.status === 400 || res.status === 401){
-      setupResult.innerHTML = '<span style="color:var(--ok)">✓ プロキシ接続 OK。下のフォームでデプロイできます。</span>';
-      saveState({ setupDone:true });
-      setTimeout(markSetupDone, 600);
+      setupResult.innerHTML = '<span style="color:var(--ok)">✓ プロキシ接続 OK</span>';
+      state.proxyUrl = url; state.setupDone = true;
+      saveState();
+      setTimeout(markSetupDone, 500);
     }else if(res.status === 404){
-      setupResult.innerHTML = '<span style="color:var(--err)">✗ 404 — URL は届いていますが、プロキシのコードと違うものがデプロイされています。コードを貼り直してください。</span>';
+      setupResult.innerHTML = '<span style="color:var(--err)">✗ 404 — Worker は応答しているがコードが正しくデプロイされていません</span>';
     }else{
-      setupResult.innerHTML = '<span style="color:var(--err)">✗ 予期しないレスポンス: HTTP '+res.status+'</span>';
+      setupResult.innerHTML = '<span style="color:var(--err)">✗ HTTP '+res.status+'</span>';
     }
   }catch(err){
-    setupResult.innerHTML = '<span style="color:var(--err)">✗ 接続失敗: '+err.message+' — URL が間違っているか、Worker がデプロイされていません</span>';
-  }finally{
-    testProxy.disabled = false;
-  }
+    setupResult.innerHTML = '<span style="color:var(--err)">✗ '+err.message+' — URL を確認してください</span>';
+  }finally{ testProxy.disabled = false; }
 });
-
 function markSetupDone(){
   setupBanner.classList.add('done');
-  setupBanner.innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'+
-    '<h2>✓ Setup complete</h2>'+
-    '<button class="toggle-setup" id="reopenSetup" type="button">設定を変更</button>'+
-    '</div>';
-  document.getElementById('reopenSetup').addEventListener('click', function(){
-    saveState({ setupDone:false });
-    location.reload();
-  });
+  setupBanner.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><h2>✓ Setup complete</h2><button class="toggle-setup" id="reopenSetup" type="button">設定を変更</button></div>';
+  document.getElementById('reopenSetup').addEventListener('click', ()=>{ state.setupDone = false; saveState(); location.reload(); });
   deploySection.classList.remove('disabled');
 }
 
-function log(type, msg){
-  const t = new Date().toTimeString().slice(0,8);
-  const line = document.createElement('div');
-  line.className = 'line';
-  line.innerHTML = '<span class="ts">'+t+'</span><span class="'+type+'">'+msg+'</span>';
-  logEl.appendChild(line);
-  logEl.scrollTop = logEl.scrollHeight;
-}
-function updatePreview(){
-  const a = accountEl.value.trim() || '{account_id}';
-  const n = nameEl.value.trim() || '{name}';
-  const p = setupUrl.value.trim().replace(/\/$/,'') || '{proxy}';
-  urlPrev.innerHTML = 'PUT '+p+'/accounts/<span class="acc">'+a+'</span>/workers/scripts/<span class="acc">'+n+'</span>';
-}
-[accountEl,nameEl,setupUrl].forEach(function(el){ el.addEventListener('input', function(){ updatePreview(); saveState(); }); });
-[tokenEl].forEach(function(el){ el.addEventListener('input', function(){ saveState(); }); });
-codeEl.addEventListener('input', function(){ charCount.textContent = codeEl.value.length; saveState(); });
-
-document.querySelectorAll('[data-tpl]').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    const k = btn.dataset.tpl;
-    if(codeEl.value.trim() && !confirm('現在のコードを置き換えますか?')) return;
-    codeEl.value = TEMPLATES[k];
-    charCount.textContent = codeEl.value.length;
-    saveState();
-    log('info','template "'+k+'" loaded.');
+// ──────────────────────────────────────────────────────────────
+// TABS
+// ──────────────────────────────────────────────────────────────
+document.querySelectorAll('.tabs button[data-tab]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelector('[data-tab-content="'+btn.dataset.tab+'"]').classList.add('active');
   });
 });
 
-$('save').addEventListener('click', function(){ saveState(); log('ok','credentials saved.'); });
-$('clear').addEventListener('click', function(){
-  tokenEl.value = accountEl.value = '';
-  saveState();
-  log('warn','credentials cleared.');
-});
-$('clearLog').addEventListener('click', function(){ logEl.innerHTML = ''; });
+// ──────────────────────────────────────────────────────────────
+// FILES
+// ──────────────────────────────────────────────────────────────
+const TEXT_EXT = /\.(js|mjs|ts|json|txt|html|css|md|toml|yaml|yml|xml|csv|env|svg)$/i;
+const CTYPE_MAP = {
+  js:'application/javascript+module', mjs:'application/javascript+module', ts:'application/javascript+module',
+  wasm:'application/wasm', json:'application/json',
+  txt:'text/plain', html:'text/html', css:'text/css',
+  md:'text/markdown', xml:'application/xml', csv:'text/csv', svg:'image/svg+xml'
+};
+function inferCtype(name){
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  return CTYPE_MAP[ext] || 'application/octet-stream';
+}
+function isText(name){ return TEXT_EXT.test(name); }
 
-function validate(){
-  const errs = [];
-  if(!tokenEl.value.trim()) errs.push('API Token が未入力');
-  if(!accountEl.value.trim()) errs.push('Account ID が未入力');
-  if(!/^[a-z0-9]{30,40}$/i.test(accountEl.value.trim())) errs.push('Account ID の形式が不正(英数32桁前後)');
-  if(!nameEl.value.trim()) errs.push('Worker 名が未入力');
-  if(!/^[a-z0-9][a-z0-9_-]*$/i.test(nameEl.value.trim())) errs.push('Worker 名は英数字/ハイフン/アンダースコアのみ');
-  if(!codeEl.value.trim()) errs.push('コードが空です');
-  return errs;
+function renderFiles(){
+  fileStrip.innerHTML = '';
+  state.files.forEach(f=>{
+    const tab = document.createElement('div');
+    tab.className = 'ftab' + (f.name === state.activeFile ? ' active' : '');
+    tab.innerHTML = '<span>'+escapeHtml(f.name)+'</span>'+(f.isEntry ? '<span class="entry">★</span>' : '');
+    const del = document.createElement('button');
+    del.className = 'del'; del.textContent = '×'; del.title = '削除';
+    del.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(state.files.length <= 1){ alert('最低1ファイル必要です'); return; }
+      if(!confirm('"'+f.name+'" を削除しますか?')) return;
+      state.files = state.files.filter(x=>x.name !== f.name);
+      if(f.isEntry) state.files[0].isEntry = true;
+      if(state.activeFile === f.name) state.activeFile = state.files[0].name;
+      saveState(); renderFiles(); loadActiveFileIntoEditor();
+    });
+    tab.appendChild(del);
+    tab.addEventListener('click', ()=>{
+      // save current editor content first
+      const cur = state.files.find(x=>x.name === state.activeFile);
+      if(cur && !cur.binary) cur.content = editor.value;
+      state.activeFile = f.name;
+      saveState();
+      renderFiles();
+      loadActiveFileIntoEditor();
+    });
+    fileStrip.appendChild(tab);
+  });
+  const entry = state.files.find(f=>f.isEntry);
+  entryName.textContent = entry ? entry.name : '(未設定)';
+  $('filesCount').textContent = state.files.length;
+}
+function loadActiveFileIntoEditor(){
+  const f = state.files.find(x => x.name === state.activeFile);
+  if(!f){ editor.style.display=''; binaryNote.style.display='none'; editor.value=''; return; }
+  if(f.binary){
+    editor.style.display = 'none';
+    binaryNote.style.display = '';
+    binaryNote.textContent = '(binary) '+f.name+' — '+formatBytes(f.size || 0)+' / Content-Type: '+f.ctype;
+  }else{
+    editor.style.display = '';
+    binaryNote.style.display = 'none';
+    editor.value = f.content || '';
+  }
+}
+editor.addEventListener('input', ()=>{
+  const f = state.files.find(x=>x.name === state.activeFile);
+  if(f && !f.binary){ f.content = editor.value; saveState(); }
+});
+$('setEntry').addEventListener('click', ()=>{
+  const cur = state.files.find(x=>x.name === state.activeFile);
+  if(!cur){ return; }
+  state.files.forEach(f=>{ f.isEntry = false; });
+  cur.isEntry = true;
+  if(cur.binary){ alert('バイナリファイルはエントリーポイントにできません'); state.files[0].isEntry = true; }
+  saveState(); renderFiles();
+});
+
+// Add file (one or more)
+$('addFile').addEventListener('click', ()=> $('fileInput').click());
+$('fileInput').addEventListener('change', async (e)=>{
+  for(const file of e.target.files) await addUploadedFile(file);
+  e.target.value = '';
+  saveState(); renderFiles(); loadActiveFileIntoEditor();
+});
+
+async function addUploadedFile(file, pathPrefix){
+  const name = (pathPrefix || '') + file.name;
+  const text = isText(name);
+  let content;
+  if(text){
+    content = await file.text();
+  }else{
+    content = await file.arrayBuffer();
+  }
+  upsertFile({
+    name,
+    content,
+    binary: !text,
+    size: file.size,
+    isEntry: false,
+    ctype: inferCtype(name)
+  });
+  log('info','added file: '+name+' ('+formatBytes(file.size)+')');
+}
+function upsertFile(f){
+  const existing = state.files.findIndex(x=>x.name === f.name);
+  if(existing >= 0){
+    f.isEntry = state.files[existing].isEntry;
+    state.files[existing] = f;
+  }else{
+    state.files.push(f);
+  }
+  if(!state.files.some(x=>x.isEntry)) state.files[0].isEntry = true;
 }
 
-const deployBtn = $('deploy');
-deployBtn.addEventListener('click', async function(){
-  const errs = validate();
-  if(errs.length){ errs.forEach(function(e){ log('err','✗ '+e); }); return; }
+// New empty file
+$('newFile').addEventListener('click', ()=>{
+  const name = prompt('ファイル名 (例: utils.js, data.json)');
+  if(!name) return;
+  if(state.files.some(f=>f.name === name)){ alert('同名ファイル既存'); return; }
+  upsertFile({ name, content:'', binary:false, isEntry:false, ctype: inferCtype(name), size:0 });
+  state.activeFile = name;
+  saveState(); renderFiles(); loadActiveFileIntoEditor();
+});
 
-  const token = tokenEl.value.trim();
-  const account = accountEl.value.trim();
-  const name = nameEl.value.trim();
-  const proxy = setupUrl.value.trim().replace(/\/$/,'');
-  const secret = setupPassword.value.trim();
-
-  deployBtn.disabled = true;
-  deployBtn.textContent = '◌ Deploying...';
-  pill.className = 'status-pill';
-  pill.innerHTML = '<span class="pulse"></span>deploying';
-  pill.style.color = 'var(--warn)';
-  pill.style.borderColor = 'var(--warn)';
-  log('info','▲ deploying "'+name+'" via proxy…');
-
-  const metadata = { main_module:'worker.js', compatibility_date: new Date().toISOString().slice(0,10) };
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
-  form.append('worker.js', new Blob([codeEl.value], {type:'application/javascript+module'}), 'worker.js');
-
-  const url = proxy + '/accounts/'+account+'/workers/scripts/'+name;
+// ZIP upload
+$('addZip').addEventListener('click', ()=> $('zipInput').click());
+$('zipInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  e.target.value = '';
+  log('info','extracting zip: '+file.name);
   try{
-    const t0 = performance.now();
-    const res = await fetch(url, {
-      method:'PUT',
-      headers:{ 'Authorization':'Bearer '+token, 'X-Proxy-Secret': secret },
-      body: form
-    });
-    const ms = Math.round(performance.now() - t0);
-    const data = await res.json().catch(function(){ return {}; });
-    if(res.ok && data.success !== false){
-      log('ok','✓ deployed in '+ms+'ms — script "'+name+'" is live.');
-      if(data.result && data.result.modified_on) log('info','  modified_on: '+data.result.modified_on);
-      log('info','→ try: https://'+name+'.<your-subdomain>.workers.dev');
-      pill.className = 'status-pill live';
-      pill.innerHTML = '<span class="pulse"></span>live';
-      pill.style.cssText = '';
-    }else{
-      log('err','✗ HTTP '+res.status+' — deploy failed');
-      if(data.errors && data.errors.length){
-        data.errors.forEach(function(er){ log('err','  ['+er.code+'] '+er.message); });
-      }else{
-        log('err','  '+JSON.stringify(data).slice(0,400));
-      }
-      pill.className = 'status-pill';
-      pill.innerHTML = '<span class="pulse"></span>error';
-      pill.style.color = 'var(--err)';
-      pill.style.borderColor = 'var(--err)';
+    const zip = await JSZip.loadAsync(file);
+    const items = [];
+    zip.forEach((path, entry)=>{ if(!entry.dir) items.push({path, entry}); });
+    let added = 0;
+    for(const {path, entry} of items){
+      // strip leading common dir (e.g. "my-worker/")
+      const name = path.replace(/^[^/]+\/(?=[^/]+)/, '');
+      const text = isText(name);
+      const content = text ? await entry.async('text') : await entry.async('arraybuffer');
+      upsertFile({
+        name, content, binary: !text, size: content.byteLength || content.length || 0,
+        isEntry: false, ctype: inferCtype(name)
+      });
+      added++;
     }
+    log('ok','✓ extracted '+added+' files from zip');
+    saveState(); renderFiles(); loadActiveFileIntoEditor();
   }catch(err){
-    log('err','✗ ネットワークエラー: '+err.message);
-    log('warn','  プロキシ URL とパスワードを再確認してください。');
-    pill.className = 'status-pill';
-    pill.innerHTML = '<span class="pulse"></span>error';
-    pill.style.color = 'var(--err)';
-    pill.style.borderColor = 'var(--err)';
-  }finally{
-    deployBtn.disabled = false;
-    deployBtn.textContent = '▲ Deploy to Cloudflare';
+    log('err','✗ zip extraction failed: '+err.message);
   }
 });
 
-loadState();
-// Auto-generate password on first run
-if(!setupPassword.value){
-  setupPassword.value = generatePassword();
+function formatBytes(n){
+  if(n < 1024) return n+' B';
+  if(n < 1024*1024) return (n/1024).toFixed(1)+' KB';
+  return (n/1024/1024).toFixed(2)+' MB';
+}
+
+// ──────────────────────────────────────────────────────────────
+// BINDINGS (in metadata.bindings on deploy)
+// ──────────────────────────────────────────────────────────────
+const BINDING_TYPES = [
+  { type:'plain_text',           label:'環境変数 (Var)',   fields:[['text','値']] },
+  { type:'kv_namespace',         label:'KV Namespace',      fields:[['namespace_id','Namespace ID']] },
+  { type:'r2_bucket',            label:'R2 Bucket',         fields:[['bucket_name','Bucket name']] },
+  { type:'d1',                   label:'D1 Database',       fields:[['id','Database ID']] },
+  { type:'queue',                label:'Queue',             fields:[['queue_name','Queue name']] },
+  { type:'service',              label:'Service Binding',   fields:[['service','Service (worker name)'], ['environment','Environment (default: production)']] },
+  { type:'ai',                   label:'Workers AI',        fields:[] },
+  { type:'browser_rendering',    label:'Browser Rendering', fields:[] },
+  { type:'analytics_engine',     label:'Analytics Engine',  fields:[['dataset','Dataset']] },
+  { type:'durable_object_namespace', label:'Durable Object',fields:[['class_name','Class name'],['script_name','Script name (optional)']] },
+  { type:'hyperdrive',           label:'Hyperdrive',        fields:[['id','Hyperdrive ID']] },
+  { type:'vectorize',            label:'Vectorize',         fields:[['index_name','Index name']] },
+];
+
+function renderBindings(){
+  bindingsList.innerHTML = '';
+  state.bindings.forEach((b, idx)=>{
+    const def = BINDING_TYPES.find(t=>t.type === b.type);
+    const item = document.createElement('div');
+    item.className = 'item';
+    const detail = (def?.fields || []).map(([k])=> b[k] ? k+'='+b[k] : '').filter(Boolean).join(', ');
+    item.innerHTML =
+      '<span class="type-badge">'+escapeHtml(def?.label || b.type)+'</span>'+
+      '<span class="name">env.'+escapeHtml(b.name)+'</span>'+
+      '<span class="detail">'+escapeHtml(detail)+'</span>';
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const del = document.createElement('button');
+    del.className = 'btn-ghost btn-danger'; del.textContent = '削除';
+    del.addEventListener('click', ()=>{
+      if(!confirm('"'+b.name+'" バインディングを削除しますか?')) return;
+      state.bindings.splice(idx, 1);
+      saveState(); renderBindings();
+    });
+    actions.appendChild(del);
+    item.appendChild(actions);
+    bindingsList.appendChild(item);
+  });
+  $('bindingsCount').textContent = state.bindings.length;
+}
+
+$('addBinding').addEventListener('click', ()=>{
+  openModal('バインディング追加', renderBindingForm());
+});
+function renderBindingForm(){
+  const wrap = document.createElement('div');
+  const typeSelect = document.createElement('select');
+  BINDING_TYPES.forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t.type; opt.textContent = t.label;
+    typeSelect.appendChild(opt);
+  });
+  const typeLabel = document.createElement('label');
+  typeLabel.innerHTML = '<span>タイプ</span>';
+  typeLabel.appendChild(typeSelect);
+  wrap.appendChild(typeLabel);
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text'; nameInput.placeholder = 'env で参照する変数名 (例: MY_KV)';
+  const nameLabel = document.createElement('label');
+  nameLabel.innerHTML = '<span>変数名 (env.NAME)</span>';
+  nameLabel.appendChild(nameInput);
+  wrap.appendChild(nameLabel);
+
+  const fieldsHost = document.createElement('div');
+  wrap.appendChild(fieldsHost);
+  function refreshFields(){
+    fieldsHost.innerHTML = '';
+    const t = BINDING_TYPES.find(x=>x.type === typeSelect.value);
+    (t?.fields || []).forEach(([key, label])=>{
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.dataset.key = key;
+      const l = document.createElement('label');
+      l.innerHTML = '<span>'+escapeHtml(label)+'</span>';
+      l.appendChild(inp);
+      fieldsHost.appendChild(l);
+    });
+  }
+  typeSelect.addEventListener('change', refreshFields);
+  refreshFields();
+
+  const submit = document.createElement('div');
+  submit.className = 'submit-row';
+  submit.innerHTML = '<button type="button" data-cancel>キャンセル</button><button type="button" class="btn-primary" data-ok style="width:auto;padding:10px 18px">追加</button>';
+  wrap.appendChild(submit);
+  submit.querySelector('[data-cancel]').addEventListener('click', closeModal);
+  submit.querySelector('[data-ok]').addEventListener('click', ()=>{
+    const name = nameInput.value.trim();
+    if(!name){ alert('変数名は必須です'); return; }
+    if(!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)){ alert('変数名は英数字とアンダースコアのみ'); return; }
+    const b = { type: typeSelect.value, name };
+    fieldsHost.querySelectorAll('input').forEach(inp=>{
+      if(inp.value.trim()) b[inp.dataset.key] = inp.value.trim();
+    });
+    state.bindings.push(b);
+    saveState(); renderBindings(); closeModal();
+    log('info','binding added: '+name+' ('+typeSelect.value+')');
+  });
+  return wrap;
+}
+
+// ──────────────────────────────────────────────────────────────
+// SECRETS (live API)
+// ──────────────────────────────────────────────────────────────
+$('refreshSecrets').addEventListener('click', refreshSecrets);
+async function refreshSecrets(){
+  if(!requireWorkerCtx('Secrets を取得')) return;
+  secretsList.innerHTML = '<div class="item"><span class="detail">取得中...</span></div>';
+  try{
+    const data = await api('/accounts/'+state.account+'/workers/scripts/'+state.name+'/secrets');
+    state.remoteSecrets = (data.result || []).map(s => s.name);
+    renderSecrets();
+    log('ok','✓ secrets fetched: '+state.remoteSecrets.length+' items');
+  }catch(err){
+    secretsList.innerHTML = '';
+    log('err','✗ secrets fetch: '+err.message);
+    if(/10007|not found|10000/i.test(err.message)){
+      log('warn','  Worker が未デプロイの可能性。先に Worker を1度デプロイしてください。');
+    }
+  }
+}
+function renderSecrets(){
+  secretsList.innerHTML = '';
+  if(state.remoteSecrets === null){
+    $('secretsCount').textContent = '?';
+    return;
+  }
+  state.remoteSecrets.forEach(name=>{
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.innerHTML = '<span class="type-badge">secret</span><span class="name">env.'+escapeHtml(name)+'</span><span class="detail">●●●●●●●●</span>';
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const del = document.createElement('button');
+    del.className = 'btn-ghost btn-danger'; del.textContent = '削除';
+    del.addEventListener('click', ()=> deleteSecret(name));
+    actions.appendChild(del);
+    item.appendChild(actions);
+    secretsList.appendChild(item);
+  });
+  $('secretsCount').textContent = state.remoteSecrets.length;
+}
+async function deleteSecret(name){
+  if(!confirm('シークレット "'+name+'" を削除しますか?')) return;
+  try{
+    await api('/accounts/'+state.account+'/workers/scripts/'+state.name+'/secrets/'+encodeURIComponent(name), { method:'DELETE' });
+    log('ok','✓ secret deleted: '+name);
+    state.remoteSecrets = state.remoteSecrets.filter(n=>n !== name);
+    renderSecrets();
+  }catch(err){ log('err','✗ delete secret: '+err.message); }
+}
+$('addSecret').addEventListener('click', ()=>{
+  if(!requireWorkerCtx('Secret 追加')) return;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = '<label><span>名前 (env.NAME)</span><input type="text" id="newSecName" placeholder="API_KEY" /></label>'+
+                   '<label><span>値</span><input type="password" id="newSecVal" /></label>'+
+                   '<p style="font-size:11px;color:var(--muted)">追加すると即時 Cloudflare に登録されます。Worker は事前に一度デプロイされている必要があります。</p>';
+  const submit = document.createElement('div');
+  submit.className = 'submit-row';
+  submit.innerHTML = '<button type="button" data-cancel>キャンセル</button><button type="button" class="btn-primary" data-ok style="width:auto;padding:10px 18px">登録</button>';
+  wrap.appendChild(submit);
+  submit.querySelector('[data-cancel]').addEventListener('click', closeModal);
+  submit.querySelector('[data-ok]').addEventListener('click', async ()=>{
+    const name = wrap.querySelector('#newSecName').value.trim();
+    const text = wrap.querySelector('#newSecVal').value;
+    if(!name || !text){ alert('名前と値は必須'); return; }
+    try{
+      await api('/accounts/'+state.account+'/workers/scripts/'+state.name+'/secrets', {
+        method:'PUT', body:{ name, text, type:'secret_text' }
+      });
+      log('ok','✓ secret saved: '+name);
+      closeModal();
+      refreshSecrets();
+    }catch(err){ log('err','✗ '+err.message); }
+  });
+  openModal('シークレット追加', wrap);
+});
+
+// ──────────────────────────────────────────────────────────────
+// DOMAINS
+// ──────────────────────────────────────────────────────────────
+$('applySubdomain').addEventListener('click', async ()=>{
+  if(!requireWorkerCtx('workers.dev 設定')) return;
+  const enabled = subdomainEnabled.checked;
+  subdomainStatus.textContent = '適用中...';
+  try{
+    await api('/accounts/'+state.account+'/workers/scripts/'+state.name+'/subdomain', {
+      method:'POST', body:{ enabled }
+    });
+    subdomainStatus.innerHTML = '<span style="color:var(--ok)">✓ '+(enabled ? '有効化' : '無効化')+'しました</span>';
+    log('ok','✓ subdomain '+(enabled ? 'enabled' : 'disabled'));
+  }catch(err){
+    subdomainStatus.innerHTML = '<span style="color:var(--err)">✗ '+err.message+'</span>';
+  }
+});
+$('checkSubdomain').addEventListener('click', async ()=>{
+  if(!requireWorkerCtx('workers.dev 状態')) return;
+  try{
+    const data = await api('/accounts/'+state.account+'/workers/scripts/'+state.name+'/subdomain');
+    const enabled = !!(data.result && data.result.enabled);
+    subdomainEnabled.checked = enabled;
+    subdomainStatus.innerHTML = '<span style="color:var(--muted)">現在: '+(enabled ? '✓ 有効' : '✗ 無効')+'</span>';
+  }catch(err){
+    subdomainStatus.innerHTML = '<span style="color:var(--err)">'+err.message+'</span>';
+  }
+});
+
+$('refreshCustomDomains').addEventListener('click', refreshCustomDomains);
+async function refreshCustomDomains(){
+  if(!state.account){ alert('Account ID 必須'); return; }
+  customDomainsList.innerHTML = '<div class="item"><span class="detail">取得中...</span></div>';
+  try{
+    const data = await api('/accounts/'+state.account+'/workers/domains');
+    state.remoteCustomDomains = data.result || [];
+    renderCustomDomains();
+    log('ok','✓ custom domains: '+state.remoteCustomDomains.length);
+  }catch(err){
+    customDomainsList.innerHTML = '';
+    log('err','✗ '+err.message);
+  }
+}
+function renderCustomDomains(){
+  customDomainsList.innerHTML = '';
+  if(!state.remoteCustomDomains) return;
+  state.remoteCustomDomains.forEach(d=>{
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.innerHTML = '<span class="type-badge">domain</span><span class="name">'+escapeHtml(d.hostname)+'</span><span class="detail">→ '+escapeHtml(d.service)+' ('+(d.environment||'production')+')</span>';
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const del = document.createElement('button');
+    del.className = 'btn-ghost btn-danger'; del.textContent = '解除';
+    del.addEventListener('click', async ()=>{
+      if(!confirm('"'+d.hostname+'" を解除しますか?')) return;
+      try{
+        await api('/accounts/'+state.account+'/workers/domains/'+d.id, { method:'DELETE' });
+        log('ok','✓ detached: '+d.hostname);
+        refreshCustomDomains();
+      }catch(err){ log('err','✗ '+err.message); }
+    });
+    actions.appendChild(del);
+    item.appendChild(actions);
+    customDomainsList.appendChild(item);
+  });
+}
+$('addCustomDomain').addEventListener('click', async ()=>{
+  if(!requireWorkerCtx('カスタムドメイン追加')) return;
+  const zones = await fetchZones();
+  if(!zones || !zones.length){ alert('Zone (ドメイン) が見つかりませんでした。Cloudflare にドメインを追加してください。'); return; }
+  const wrap = document.createElement('div');
+  const zonesOpts = zones.map(z=>'<option value="'+z.id+'">'+escapeHtml(z.name)+'</option>').join('');
+  wrap.innerHTML =
+    '<label><span>ホスト名</span><input type="text" id="cdHost" placeholder="api.example.com" /></label>'+
+    '<label><span>Zone</span><select id="cdZone">'+zonesOpts+'</select></label>'+
+    '<p style="font-size:11px;color:var(--muted)">Worker "'+escapeHtml(state.name)+'" に紐付けます。</p>';
+  const submit = document.createElement('div');
+  submit.className = 'submit-row';
+  submit.innerHTML = '<button type="button" data-cancel>キャンセル</button><button type="button" class="btn-primary" data-ok style="width:auto;padding:10px 18px">追加</button>';
+  wrap.appendChild(submit);
+  submit.querySelector('[data-cancel]').addEventListener('click', closeModal);
+  submit.querySelector('[data-ok]').addEventListener('click', async ()=>{
+    const host = wrap.querySelector('#cdHost').value.trim();
+    const zid = wrap.querySelector('#cdZone').value;
+    if(!host){ alert('ホスト名必須'); return; }
+    try{
+      await api('/accounts/'+state.account+'/workers/domains', {
+        method:'PUT', body:{ environment:'production', hostname: host, service: state.name, zone_id: zid }
+      });
+      log('ok','✓ custom domain attached: '+host);
+      closeModal();
+      refreshCustomDomains();
+    }catch(err){ log('err','✗ '+err.message); }
+  });
+  openModal('カスタムドメイン追加', wrap);
+});
+
+$('refreshRoutes').addEventListener('click', refreshRoutes);
+async function refreshRoutes(){
+  const zones = await fetchZones();
+  if(!zones) return;
+  routesList.innerHTML = '<div class="item"><span class="detail">全 Zone のルートを取得中...</span></div>';
+  const all = [];
+  for(const z of zones){
+    try{
+      const data = await api('/zones/'+z.id+'/workers/routes');
+      (data.result || []).forEach(r => all.push({ ...r, zone_name: z.name, zone_id: z.id }));
+    }catch(e){}
+  }
+  state.remoteRoutes = all;
+  renderRoutes();
+  log('ok','✓ routes: '+all.length+' (全 zone 合計)');
+}
+function renderRoutes(){
+  routesList.innerHTML = '';
+  if(!state.remoteRoutes) return;
+  state.remoteRoutes.forEach(r=>{
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.innerHTML = '<span class="type-badge">route</span><span class="name">'+escapeHtml(r.pattern)+'</span><span class="detail">→ '+escapeHtml(r.script || '(none)')+' on '+escapeHtml(r.zone_name)+'</span>';
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const del = document.createElement('button');
+    del.className = 'btn-ghost btn-danger'; del.textContent = '削除';
+    del.addEventListener('click', async ()=>{
+      if(!confirm('"'+r.pattern+'" を削除しますか?')) return;
+      try{
+        await api('/zones/'+r.zone_id+'/workers/routes/'+r.id, { method:'DELETE' });
+        log('ok','✓ route deleted');
+        refreshRoutes();
+      }catch(err){ log('err','✗ '+err.message); }
+    });
+    actions.appendChild(del);
+    item.appendChild(actions);
+    routesList.appendChild(item);
+  });
+}
+$('addRoute').addEventListener('click', async ()=>{
+  if(!requireWorkerCtx('ルート追加')) return;
+  const zones = await fetchZones();
+  if(!zones || !zones.length){ alert('Zone (ドメイン) が見つかりません'); return; }
+  const wrap = document.createElement('div');
+  const zonesOpts = zones.map(z=>'<option value="'+z.id+'">'+escapeHtml(z.name)+'</option>').join('');
+  wrap.innerHTML =
+    '<label><span>パターン</span><input type="text" id="rtPattern" placeholder="example.com/api/*" /></label>'+
+    '<label><span>Zone</span><select id="rtZone">'+zonesOpts+'</select></label>';
+  const submit = document.createElement('div');
+  submit.className = 'submit-row';
+  submit.innerHTML = '<button type="button" data-cancel>キャンセル</button><button type="button" class="btn-primary" data-ok style="width:auto;padding:10px 18px">追加</button>';
+  wrap.appendChild(submit);
+  submit.querySelector('[data-cancel]').addEventListener('click', closeModal);
+  submit.querySelector('[data-ok]').addEventListener('click', async ()=>{
+    const pat = wrap.querySelector('#rtPattern').value.trim();
+    const zid = wrap.querySelector('#rtZone').value;
+    if(!pat){ alert('パターン必須'); return; }
+    try{
+      await api('/zones/'+zid+'/workers/routes', {
+        method:'POST', body:{ pattern: pat, script: state.name }
+      });
+      log('ok','✓ route added');
+      closeModal();
+      refreshRoutes();
+    }catch(err){ log('err','✗ '+err.message); }
+  });
+  openModal('ルート追加', wrap);
+});
+
+async function fetchZones(){
+  if(state.zones) return state.zones;
+  try{
+    const data = await api('/zones?per_page=50');
+    state.zones = (data.result || []).map(z=>({ id:z.id, name:z.name }));
+    return state.zones;
+  }catch(err){
+    log('err','✗ zones fetch: '+err.message);
+    return null;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// MODAL
+// ──────────────────────────────────────────────────────────────
+function openModal(title, body){
+  modalTitle.textContent = title;
+  modalBody.innerHTML = '';
+  modalBody.appendChild(body);
+  modal.classList.add('open');
+}
+function closeModal(){ modal.classList.remove('open'); }
+modalClose.addEventListener('click', closeModal);
+modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
+
+// ──────────────────────────────────────────────────────────────
+// CREDENTIALS BIND
+// ──────────────────────────────────────────────────────────────
+function syncFromInputs(){
+  state.token = tokenEl.value.trim();
+  state.account = accountEl.value.trim();
+  state.name = nameEl.value.trim();
+  state.compatDate = compatDateEl.value || state.compatDate;
   saveState();
 }
+[tokenEl, accountEl, nameEl, compatDateEl].forEach(el=> el.addEventListener('input', syncFromInputs));
+$('saveCreds').addEventListener('click', ()=>{ syncFromInputs(); log('ok','credentials saved'); });
+$('clearCreds').addEventListener('click', ()=>{
+  if(!confirm('Token と Account ID をクリアしますか?')) return;
+  tokenEl.value=''; accountEl.value=''; state.token=''; state.account='';
+  saveState(); log('warn','credentials cleared');
+});
+
+document.querySelectorAll('[data-tpl]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const k = btn.dataset.tpl;
+    const entry = state.files.find(f=>f.isEntry);
+    if(entry && entry.content.trim() && !confirm('エントリーポイント ('+entry.name+') を置き換えますか?')) return;
+    if(entry){ entry.content = TEMPLATES[k]; if(state.activeFile === entry.name) editor.value = entry.content; }
+    saveState(); log('info','template "'+k+'" loaded into '+entry.name);
+  });
+});
+
+function requireWorkerCtx(actionLabel){
+  if(!state.account){ alert(actionLabel+': Account ID 必須'); return false; }
+  if(!state.token){ alert(actionLabel+': API Token 必須'); return false; }
+  if(!state.name){ alert(actionLabel+': Worker Name 必須'); return false; }
+  return true;
+}
+
+// ──────────────────────────────────────────────────────────────
+// DEPLOY
+// ──────────────────────────────────────────────────────────────
+$('deploy').addEventListener('click', async ()=>{
+  if(!requireWorkerCtx('Deploy')) return;
+  // sync editor with active file
+  const cur = state.files.find(x=>x.name === state.activeFile);
+  if(cur && !cur.binary) cur.content = editor.value;
+  const entry = state.files.find(f=>f.isEntry);
+  if(!entry){ log('err','エントリーポイントが未設定'); return; }
+  if(entry.binary){ log('err','エントリーポイントはテキストモジュールである必要があります'); return; }
+
+  const btn = $('deploy');
+  btn.disabled = true;
+  btn.textContent = '◌ Deploying...';
+  pill.className = 'status-pill'; pill.innerHTML = '<span class="pulse"></span>deploying';
+  pill.style.color='var(--warn)'; pill.style.borderColor='var(--warn)';
+
+  // Build bindings (include user bindings + inherit existing secrets)
+  let bindings = state.bindings.slice();
+  // Try to preserve existing secrets via 'inherit'
+  if(state.remoteSecrets === null){
+    try{
+      const data = await api('/accounts/'+state.account+'/workers/scripts/'+state.name+'/secrets');
+      state.remoteSecrets = (data.result || []).map(s => s.name);
+    }catch(e){ state.remoteSecrets = []; }
+  }
+  // Add inherit bindings for existing secrets not overridden by user
+  const userBindingNames = new Set(bindings.map(b => b.name));
+  for(const secName of (state.remoteSecrets || [])){
+    if(!userBindingNames.has(secName)){
+      bindings.push({ type:'inherit', name: secName });
+    }
+  }
+
+  const metadata = {
+    main_module: entry.name,
+    compatibility_date: state.compatDate || new Date().toISOString().slice(0,10),
+    bindings: bindings
+  };
+
+  log('info','▲ deploying "'+state.name+'" ('+state.files.length+' files, '+bindings.length+' bindings)');
+
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
+  for(const f of state.files){
+    const part = f.binary ? new Blob([f.content], {type: f.ctype}) : new Blob([f.content], {type: f.ctype});
+    form.append(f.name, part, f.name);
+  }
+
+  try{
+    const t0 = performance.now();
+    const url = state.proxyUrl.replace(/\/$/,'') + '/accounts/'+state.account+'/workers/scripts/'+state.name;
+    const res = await fetch(url, {
+      method:'PUT',
+      headers:{ 'Authorization':'Bearer '+state.token, 'X-Proxy-Secret': state.password },
+      body: form
+    });
+    const ms = Math.round(performance.now()-t0);
+    const data = await res.json().catch(()=>({}));
+    if(res.ok && data.success !== false){
+      log('ok','✓ deployed in '+ms+'ms');
+      if(data.result?.modified_on) log('info','  modified_on: '+data.result.modified_on);
+      log('info','→ try: https://'+state.name+'.<your-subdomain>.workers.dev (Domains タブで subdomain を有効化)');
+      pill.className='status-pill live'; pill.innerHTML='<span class="pulse"></span>live'; pill.style.cssText='';
+    }else{
+      log('err','✗ HTTP '+res.status);
+      if(data.errors?.length){ data.errors.forEach(er=> log('err','  ['+er.code+'] '+er.message)); }
+      else log('err','  '+JSON.stringify(data).slice(0,400));
+      pill.className='status-pill'; pill.innerHTML='<span class="pulse"></span>error';
+      pill.style.color='var(--err)'; pill.style.borderColor='var(--err)';
+    }
+  }catch(err){
+    log('err','✗ '+err.message);
+    pill.className='status-pill'; pill.innerHTML='<span class="pulse"></span>error';
+    pill.style.color='var(--err)'; pill.style.borderColor='var(--err)';
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '▲ Deploy to Cloudflare';
+  }
+});
+
+$('clearLog').addEventListener('click', ()=>{ logEl.innerHTML=''; });
+
+// ──────────────────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────────────────
+loadState();
+if(!state.password){ state.password = generatePassword(); saveState(); }
+setupPassword.value = state.password;
+setupUrl.value = state.proxyUrl || '';
 regenProxyCode();
-if(!codeEl.value) codeEl.value = TEMPLATES.hello;
-charCount.textContent = codeEl.value.length;
-updatePreview();
+tokenEl.value = state.token;
+accountEl.value = state.account;
+nameEl.value = state.name;
+compatDateEl.value = state.compatDate;
+renderFiles();
+loadActiveFileIntoEditor();
+renderBindings();
+if(state.setupDone && state.proxyUrl) markSetupDone();
 </script>
 </body>
 </html>
