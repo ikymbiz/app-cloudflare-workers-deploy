@@ -158,9 +158,13 @@
 
     <div class="setup-steps">
       <div class="step">
-        <h3><span class="num">1</span>パスワードを決める</h3>
-        <p>第三者にプロキシを勝手に使われないようにする合言葉。下のコードに自動で埋め込まれます。</p>
-        <input type="text" id="setupPassword" placeholder="例: my-cf-proxy-2026-xyz" autocomplete="off" />
+        <h3><span class="num">1</span>自動生成されたパスワード</h3>
+        <p>第三者にプロキシを使われないようにする合言葉。<b>自動生成済み</b>なので入力不要、下のコードに埋め込み済みです。</p>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="setupPassword" readonly autocomplete="off" style="flex:1;font-family:'JetBrains Mono',monospace;letter-spacing:.04em" />
+          <button id="regenPassword" type="button" title="新しいパスワードを生成" style="padding:10px 14px">↻</button>
+        </div>
+        <p style="margin-top:8px;font-size:11px;color:var(--muted)">↻ で再生成できます(再生成後はコードを再コピー & 再デプロイが必要)</p>
       </div>
 
       <div class="step">
@@ -322,6 +326,7 @@ const TEMPLATES = {
 
 const $ = function(i){ return document.getElementById(i); };
 const setupBanner=$('setupBanner'), setupPassword=$('setupPassword'),
+      regenPassword=$('regenPassword'),
       proxyCode=$('proxyCode'), copyCode=$('copyCode'),
       setupUrl=$('setupUrl'), testProxy=$('testProxy'), setupResult=$('setupResult'),
       deploySection=$('deploySection'),
@@ -354,18 +359,32 @@ function saveState(extra){
   }catch(e){}
 }
 
+function generatePassword(){
+  // crypto-safe random, only ASCII alphanumeric (no special chars → no escaping issues)
+  const arr = new Uint8Array(24);
+  crypto.getRandomValues(arr);
+  const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let s = 'cfp_';
+  for(let i=0;i<arr.length;i++) s += ALPHA[arr[i] % ALPHA.length];
+  return s;
+}
+
 function regenProxyCode(){
-  const p = setupPassword.value.trim() || 'CHANGE_ME_TO_RANDOM_STRING';
+  const p = setupPassword.value.trim();
+  if(!p) return;
   proxyCode.value = PROXY_TEMPLATE.replace('__PASSWORD__', p);
 }
-setupPassword.addEventListener('input', function(){ regenProxyCode(); saveState(); });
+regenPassword.addEventListener('click', function(){
+  if(!confirm('新しいパスワードを生成しますか?\n生成後はコードを再コピー & Worker を再デプロイする必要があります。')) return;
+  setupPassword.value = generatePassword();
+  regenProxyCode();
+  saveState({ setupDone:false });
+  // also reset the deploy section if it was unlocked
+  deploySection.classList.add('disabled');
+  setupResult.innerHTML = '<span style="color:var(--warn)">新パスワードを生成しました。コードを再コピーして Worker に貼り直してください。</span>';
+});
 
 copyCode.addEventListener('click', async function(){
-  if(!setupPassword.value.trim()){
-    alert('まずパスワードを入力してください。');
-    setupPassword.focus();
-    return;
-  }
   try{
     await navigator.clipboard.writeText(proxyCode.value);
   }catch(e){
@@ -379,8 +398,12 @@ copyCode.addEventListener('click', async function(){
 testProxy.addEventListener('click', async function(){
   const url = setupUrl.value.trim().replace(/\/$/,'');
   const pass = setupPassword.value.trim();
-  if(!url || !pass){
-    setupResult.innerHTML = '<span style="color:var(--err)">URL と パスワードを両方入れてください</span>';
+  if(!url){
+    setupResult.innerHTML = '<span style="color:var(--err)">URL を入れてください</span>';
+    return;
+  }
+  if(!pass){
+    setupResult.innerHTML = '<span style="color:var(--err)">パスワードが空です。↻ ボタンで生成してください</span>';
     return;
   }
   if(!/^https:\/\/.+/.test(url)){
@@ -395,16 +418,26 @@ testProxy.addEventListener('click', async function(){
       headers:{ 'X-Proxy-Secret': pass }
     });
     if(res.status === 403){
-      setupResult.innerHTML = '<span style="color:var(--err)">✗ パスワード不一致。Worker 側コードの SECRET と同じ値か確認してください。</span>';
+      setupResult.innerHTML =
+        '<div style="color:var(--err);line-height:1.6">'+
+        '✗ <b>403 Forbidden</b> — プロキシは応答していますが、SECRET が一致していません。<br>'+
+        '<span style="color:var(--muted);font-size:11px">原因のほぼ確実な対処:</span><br>'+
+        '<span style="font-size:11.5px">1. <b>copy</b> ボタンを押し直して最新コードをコピー<br>'+
+        '2. Cloudflare で対象 Worker を開き → <b>Edit code</b> → 中身を全消し<br>'+
+        '3. もう一度貼り付け → <b>Save and deploy</b><br>'+
+        '4. このページに戻って <b>テスト接続</b> を再押下</span>'+
+        '</div>';
     }else if(res.ok || res.status === 400 || res.status === 401){
       setupResult.innerHTML = '<span style="color:var(--ok)">✓ プロキシ接続 OK。下のフォームでデプロイできます。</span>';
       saveState({ setupDone:true });
       setTimeout(markSetupDone, 600);
+    }else if(res.status === 404){
+      setupResult.innerHTML = '<span style="color:var(--err)">✗ 404 — URL は届いていますが、プロキシのコードと違うものがデプロイされています。コードを貼り直してください。</span>';
     }else{
       setupResult.innerHTML = '<span style="color:var(--err)">✗ 予期しないレスポンス: HTTP '+res.status+'</span>';
     }
   }catch(err){
-    setupResult.innerHTML = '<span style="color:var(--err)">✗ 接続失敗: '+err.message+' — URL を再確認してください</span>';
+    setupResult.innerHTML = '<span style="color:var(--err)">✗ 接続失敗: '+err.message+' — URL が間違っているか、Worker がデプロイされていません</span>';
   }finally{
     testProxy.disabled = false;
   }
@@ -539,6 +572,11 @@ deployBtn.addEventListener('click', async function(){
 });
 
 loadState();
+// Auto-generate password on first run
+if(!setupPassword.value){
+  setupPassword.value = generatePassword();
+  saveState();
+}
 regenProxyCode();
 if(!codeEl.value) codeEl.value = TEMPLATES.hello;
 charCount.textContent = codeEl.value.length;
