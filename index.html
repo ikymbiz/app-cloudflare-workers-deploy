@@ -3,23 +3,15 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Workers Deploy / 簡易デプロイツール</title>
+<title>Workers Deploy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0c0b09;
-    --panel:#15130f;
-    --line:#2a251c;
-    --line-2:#3a3225;
-    --ink:#f3ead8;
-    --muted:#8d8472;
-    --accent:#f38020;
-    --accent-soft:#f3802022;
-    --ok:#7ed492;
-    --err:#ff6a55;
-    --warn:#e0c275;
+    --bg:#0c0b09;--panel:#15130f;--line:#2a251c;--line-2:#3a3225;
+    --ink:#f3ead8;--muted:#8d8472;--accent:#f38020;--accent-soft:#f3802022;
+    --ok:#7ed492;--err:#ff6a55;--warn:#e0c275;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;line-height:1.55}
@@ -32,154 +24,118 @@
   }
   .grid-bg{
     position:fixed;inset:0;pointer-events:none;z-index:0;
-    background-image:
-      linear-gradient(var(--line) 1px,transparent 1px),
-      linear-gradient(90deg,var(--line) 1px,transparent 1px);
-    background-size:48px 48px;
-    opacity:.07;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:48px 48px;opacity:.07;
     mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
   }
   .wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:32px 24px 80px}
 
-  /* ── Header ───────────────────────────── */
-  header{
-    display:flex;align-items:flex-end;justify-content:space-between;
-    border-bottom:1px solid var(--line);padding-bottom:24px;margin-bottom:28px;flex-wrap:wrap;gap:16px;
-  }
+  header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:24px;margin-bottom:28px;flex-wrap:wrap;gap:16px}
   .brand{display:flex;align-items:baseline;gap:14px}
-  .brand .mark{
-    width:38px;height:38px;border:1.5px solid var(--accent);
-    display:grid;place-items:center;color:var(--accent);font-weight:700;
-    transform:rotate(-3deg);background:var(--accent-soft);
-  }
-  h1{
-    font-family:"Fraunces",serif;font-weight:600;font-style:italic;
-    font-size:clamp(28px,4.5vw,44px);margin:0;letter-spacing:-.02em;line-height:1;
-  }
-  h1 small{
-    display:block;font-family:"JetBrains Mono",monospace;font-style:normal;font-weight:400;
-    font-size:11px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-top:6px;
-  }
+  .brand .mark{width:38px;height:38px;border:1.5px solid var(--accent);display:grid;place-items:center;color:var(--accent);font-weight:700;transform:rotate(-3deg);background:var(--accent-soft)}
+  h1{font-family:"Fraunces",serif;font-weight:600;font-style:italic;font-size:clamp(28px,4.5vw,44px);margin:0;letter-spacing:-.02em;line-height:1}
+  h1 small{display:block;font-family:"JetBrains Mono",monospace;font-style:normal;font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;margin-top:6px}
   .meta{font-size:11px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;text-align:right}
   .meta b{color:var(--accent);font-weight:500}
 
-  /* ── Layout ───────────────────────────── */
+  .setup-banner{
+    background:linear-gradient(135deg, #2a1a07 0%, #1a0f04 100%);
+    border:1px solid var(--accent);position:relative;
+    padding:24px;margin-bottom:24px;
+  }
+  .setup-banner.done{background:#0d1208;border-color:#2a4220;padding:14px 20px}
+  .setup-banner h2{margin:0 0 4px;font-family:"Fraunces",serif;font-style:italic;font-size:22px;font-weight:600;color:var(--accent)}
+  .setup-banner.done h2{color:var(--ok);font-size:14px;font-style:normal;font-family:"JetBrains Mono",monospace;letter-spacing:.1em;text-transform:uppercase}
+  .setup-banner p{margin:0 0 16px;font-size:12.5px;color:#cfc6b1}
+  .setup-banner.done p{display:none}
+  .setup-banner.done .setup-steps{display:none}
+
+  .setup-steps{display:grid;grid-template-columns:1fr;gap:16px;margin-top:18px}
+  @media(min-width:880px){.setup-steps{grid-template-columns:1fr 1fr}}
+  .step{background:rgba(0,0,0,.25);border:1px solid #3a2515;padding:14px 16px}
+  .step h3{margin:0 0 10px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px}
+  .step h3 .num{display:inline-grid;place-items:center;width:20px;height:20px;border:1px solid var(--accent);font-size:11px}
+  .step ol{margin:0;padding-left:18px;font-size:12px;color:#cfc6b1}
+  .step ol li{margin-bottom:4px}
+  .step a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+  .step p{margin:0 0 10px;font-size:12px;color:#cfc6b1}
+
+  .code-block{position:relative;margin-top:10px}
+  .code-block textarea{
+    width:100%;background:#000;color:#f3ead8;border:1px solid #3a2515;
+    font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1.5;
+    padding:10px 12px;height:170px;resize:vertical;white-space:pre;overflow:auto;
+  }
+  .code-block .copy{
+    position:absolute;top:6px;right:6px;background:var(--accent);color:#1a0f04;
+    border:none;padding:5px 10px;font-size:10px;letter-spacing:.1em;cursor:pointer;font-weight:700;
+  }
+  .code-block .copy.copied{background:var(--ok)}
+
   .columns{display:grid;grid-template-columns:1fr;gap:20px}
   @media(min-width:960px){.columns{grid-template-columns:380px 1fr}}
-
-  .panel{
-    background:var(--panel);border:1px solid var(--line);
-    padding:20px;position:relative;
-  }
+  .panel{background:var(--panel);border:1px solid var(--line);padding:20px;position:relative}
   .panel + .panel{margin-top:20px}
-  .panel h2{
-    margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);
-    display:flex;align-items:center;gap:10px;
-  }
-  .panel h2::before{
-    content:"";width:6px;height:6px;background:var(--accent);display:inline-block;
-  }
+  .panel h2{margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px}
+  .panel h2::before{content:"";width:6px;height:6px;background:var(--accent);display:inline-block}
   .panel h2 .tag{margin-left:auto;color:var(--accent);font-weight:500;letter-spacing:.1em}
 
-  /* ── Inputs ───────────────────────────── */
   label{display:block;margin-bottom:14px}
-  label > span{
-    display:flex;justify-content:space-between;align-items:center;
-    font-size:10.5px;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px;
-  }
+  label > span{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}
   label .hint{color:var(--accent);text-transform:none;letter-spacing:0;cursor:help;font-size:11px}
   input[type=text],input[type=password],textarea,select{
-    width:100%;background:#0a0907;color:var(--ink);
-    border:1px solid var(--line-2);padding:10px 12px;
-    font-family:"JetBrains Mono",monospace;font-size:13px;
+    width:100%;background:#0a0907;color:var(--ink);border:1px solid var(--line-2);
+    padding:10px 12px;font-family:"JetBrains Mono",monospace;font-size:13px;
     outline:none;transition:border-color .15s,background .15s;
   }
   input:focus,textarea:focus,select:focus{border-color:var(--accent);background:#100c08}
   textarea{resize:vertical;min-height:280px;line-height:1.55;tab-size:2}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
-  /* ── Buttons ──────────────────────────── */
-  button,.btn{
-    font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
-    background:transparent;color:var(--ink);border:1px solid var(--line-2);
-    padding:10px 14px;cursor:pointer;transition:all .15s;
-  }
+  button,.btn{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:transparent;color:var(--ink);border:1px solid var(--line-2);padding:10px 14px;cursor:pointer;transition:all .15s}
   button:hover,.btn:hover{border-color:var(--accent);color:var(--accent)}
   button:disabled{opacity:.4;cursor:not-allowed}
-  .btn-primary{
-    background:var(--accent);color:#1a0f04;border-color:var(--accent);font-weight:700;
-    padding:14px 18px;width:100%;font-size:13px;
-  }
+  .btn-primary{background:var(--accent);color:#1a0f04;border-color:var(--accent);font-weight:700;padding:14px 18px;width:100%;font-size:13px}
   .btn-primary:hover{background:#ff9636;border-color:#ff9636;color:#1a0f04}
   .btn-ghost{font-size:11px;padding:6px 10px}
 
-  /* ── Templates ────────────────────────── */
   .templates{display:flex;flex-wrap:wrap;gap:6px}
   .templates button{font-size:11px;padding:7px 10px;letter-spacing:.08em}
 
-  /* ── Editor header ────────────────────── */
-  .editor-bar{
-    display:flex;align-items:center;justify-content:space-between;
-    background:#0a0907;border:1px solid var(--line-2);border-bottom:none;
-    padding:8px 12px;font-size:11px;color:var(--muted);letter-spacing:.1em;
-  }
+  .editor-bar{display:flex;align-items:center;justify-content:space-between;background:#0a0907;border:1px solid var(--line-2);border-bottom:none;padding:8px 12px;font-size:11px;color:var(--muted);letter-spacing:.1em}
   .editor-bar .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block;margin-right:5px}
   .editor-bar .dot.on{background:var(--accent)}
   .editor textarea{border-top:none;font-size:13px}
 
-  /* ── Output / log ─────────────────────── */
-  .log{
-    background:#0a0907;border:1px solid var(--line);padding:14px 16px;
-    font-size:12px;min-height:60px;max-height:340px;overflow-y:auto;
-    white-space:pre-wrap;word-break:break-all;
-  }
-  .log .line{padding:2px 0;border-bottom:1px dashed transparent}
+  .log{background:#0a0907;border:1px solid var(--line);padding:14px 16px;font-size:12px;min-height:60px;max-height:340px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+  .log .line{padding:2px 0}
   .log .ts{color:var(--muted);margin-right:8px}
-  .log .ok{color:var(--ok)}
-  .log .err{color:var(--err)}
-  .log .warn{color:var(--warn)}
-  .log .info{color:var(--accent)}
-  .log:empty::before{content:"// no activity yet — credentials を入力して deploy してください.";color:var(--muted);font-style:italic}
+  .log .ok{color:var(--ok)} .log .err{color:var(--err)} .log .warn{color:var(--warn)} .log .info{color:var(--accent)}
+  .log:empty::before{content:"// no activity yet";color:var(--muted);font-style:italic}
 
-  /* ── Help drawer ──────────────────────── */
-  details{border:1px dashed var(--line-2);padding:0}
-  details summary{
-    list-style:none;cursor:pointer;padding:12px 14px;
-    font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
-    display:flex;justify-content:space-between;align-items:center;
-  }
-  details summary::-webkit-details-marker{display:none}
-  details[open] summary{color:var(--accent);border-bottom:1px dashed var(--line-2)}
-  details summary::after{content:"+";font-size:18px;color:var(--accent)}
-  details[open] summary::after{content:"−"}
-  details .body{padding:14px 16px;font-size:12.5px;color:#cfc6b1}
-  details .body code{background:#0a0907;padding:2px 6px;border:1px solid var(--line-2);font-size:11.5px;color:var(--accent)}
-  details .body ol{padding-left:18px;margin:8px 0}
-  details .body a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
-
-  /* ── Status pill ──────────────────────── */
-  .status-pill{
-    display:inline-flex;align-items:center;gap:8px;font-size:11px;
-    padding:4px 10px;border:1px solid var(--line-2);color:var(--muted);
-    letter-spacing:.12em;text-transform:uppercase;
-  }
+  .status-pill{display:inline-flex;align-items:center;gap:8px;font-size:11px;padding:4px 10px;border:1px solid var(--line-2);color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
   .status-pill.live{color:var(--ok);border-color:var(--ok)}
   .status-pill .pulse{width:6px;height:6px;border-radius:50%;background:currentColor;animation:p 1.4s infinite}
   @keyframes p{0%,100%{opacity:.4}50%{opacity:1}}
 
-  /* ── URL preview ──────────────────────── */
-  .url-preview{
-    background:#0a0907;border:1px solid var(--line-2);padding:10px 12px;
-    font-size:11.5px;color:var(--muted);word-break:break-all;
-  }
-  .url-preview b{color:var(--ink);font-weight:500}
+  .url-preview{background:#0a0907;border:1px solid var(--line-2);padding:10px 12px;font-size:11.5px;color:var(--muted);word-break:break-all}
   .url-preview .acc{color:var(--accent)}
 
-  footer{
-    margin-top:40px;padding-top:20px;border-top:1px solid var(--line);
-    font-size:11px;color:var(--muted);letter-spacing:.1em;text-align:center;
-  }
-  footer .heart{color:var(--accent)}
+  .deploy-section{transition:opacity .25s}
+  .deploy-section.disabled{opacity:.32;pointer-events:none;filter:saturate(.3)}
+
+  details{border:1px dashed var(--line-2);padding:0}
+  details summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+  details summary::-webkit-details-marker{display:none}
+  details[open] summary{color:var(--accent);border-bottom:1px dashed var(--line-2)}
+  details summary::after{content:"+";font-size:18px;color:var(--accent)}
+  details[open] summary::after{content:"\2212"}
+  details .body{padding:14px 16px;font-size:12.5px;color:#cfc6b1}
+  details .body code{background:#0a0907;padding:2px 6px;border:1px solid var(--line-2);font-size:11.5px;color:var(--accent)}
+
+  .toggle-setup{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--ok);color:var(--ok);padding:4px 10px;font-size:10px;letter-spacing:.1em;cursor:pointer}
+  .toggle-setup:hover{background:rgba(126,212,146,.1)}
+
+  footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);letter-spacing:.1em;text-align:center}
 </style>
 </head>
 <body>
@@ -189,21 +145,53 @@
   <header>
     <div class="brand">
       <div class="mark">⚡</div>
-      <div>
-        <h1>Workers Deploy
-          <small>cloudflare workers · one-click upload</small>
-        </h1>
-      </div>
+      <div><h1>Workers Deploy <small>cloudflare workers &middot; single file</small></h1></div>
     </div>
-    <div class="meta">
-      <div>edge · runtime</div>
-      <div><b>v4 API</b> / direct upload</div>
-    </div>
+    <div class="meta"><div>edge &middot; runtime</div><div><b>v4 API</b></div></div>
   </header>
 
+  <!-- ─── SETUP WIZARD ─────────────────────────────────── -->
+  <div class="setup-banner" id="setupBanner">
+    <h2>初回セットアップ (1回だけ)</h2>
+    <p>Cloudflare API はブラウザから直接叩けない仕様(CORS 非対応)なので、橋渡し用の Worker を <b>1 個だけ</b>立てます。<br>
+    この作業は<b>最初の1回だけ</b>。以降このページから何個でも別の Worker をデプロイできるようになります。</p>
+
+    <div class="setup-steps">
+      <div class="step">
+        <h3><span class="num">1</span>パスワードを決める</h3>
+        <p>第三者にプロキシを勝手に使われないようにする合言葉。下のコードに自動で埋め込まれます。</p>
+        <input type="text" id="setupPassword" placeholder="例: my-cf-proxy-2026-xyz" autocomplete="off" />
+      </div>
+
+      <div class="step">
+        <h3><span class="num">2</span>コードをコピーして Cloudflare に貼る</h3>
+        <ol>
+          <li><a href="https://dash.cloudflare.com" target="_blank" rel="noopener">dash.cloudflare.com</a> → <b>Workers & Pages</b> → <b>Create</b></li>
+          <li>"Hello World" テンプレで <b>Deploy</b></li>
+          <li><b>Edit code</b> → 全消し → 下のコードを貼り付け → <b>Save and deploy</b></li>
+        </ol>
+        <div class="code-block">
+          <textarea id="proxyCode" readonly spellcheck="false"></textarea>
+          <button class="copy" id="copyCode" type="button">copy</button>
+        </div>
+      </div>
+
+      <div class="step" style="grid-column:1/-1">
+        <h3><span class="num">3</span>デプロイした Worker の URL を貼ってテスト</h3>
+        <p>Cloudflare の画面上部に出る <code style="background:#000;padding:2px 6px;font-size:11px">xxxxx.&lt;your-name&gt;.workers.dev</code> を貼り付けてください。</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="setupUrl" placeholder="https://your-proxy.your-name.workers.dev" autocomplete="off" style="flex:1;min-width:280px" />
+          <button id="testProxy" type="button" style="padding:10px 18px">テスト接続</button>
+        </div>
+        <div id="setupResult" style="margin-top:10px;font-size:12px;min-height:18px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── DEPLOY UI ────────────────────────────────────── -->
+  <div class="deploy-section disabled" id="deploySection">
   <div class="columns">
 
-    <!-- LEFT COLUMN ─────────────────────────────────────── -->
     <div>
       <div class="panel">
         <h2>Credentials <span class="tag">required</span></h2>
@@ -215,7 +203,7 @@
 
         <label>
           <span>Account ID</span>
-          <input type="text" id="account" placeholder="32桁の英数字 (Workersダッシュボード右側)" autocomplete="off" />
+          <input type="text" id="account" placeholder="32桁の英数字" autocomplete="off" />
         </label>
 
         <label>
@@ -223,17 +211,12 @@
           <input type="text" id="name" placeholder="my-worker" value="hello-worker" autocomplete="off" />
         </label>
 
-        <label style="margin-bottom:6px">
-          <span>保存 <span class="hint" style="cursor:default">※このブラウザのみ</span></span>
-        </label>
         <div style="display:flex;gap:8px;margin-bottom:10px">
           <button id="save" class="btn-ghost" type="button">credentials を保存</button>
           <button id="clear" class="btn-ghost" type="button">クリア</button>
         </div>
 
-        <div class="url-preview" id="urlPreview">
-          PUT https://api.cloudflare.com/client/v4/accounts/<span class="acc">{account_id}</span>/workers/scripts/<span class="acc">{name}</span>
-        </div>
+        <div class="url-preview" id="urlPreview"></div>
       </div>
 
       <div class="panel">
@@ -250,39 +233,29 @@
 
       <div class="panel">
         <details>
-          <summary>使い方 / How it works</summary>
+          <summary>API Token の作り方</summary>
           <div class="body">
-            <ol>
-              <li><a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">My Profile → API Tokens</a> から <code>Edit Cloudflare Workers</code> テンプレートでトークンを作成。</li>
-              <li>Workers ダッシュボード右側の <code>Account ID</code> をコピー。</li>
-              <li>Worker 名(英数字とハイフン)を決めてコードを書く。</li>
-              <li><b>Deploy</b> を押すと Cloudflare API に直接 PUT されます。</li>
-              <li>成功後は <code>https://&lt;name&gt;.&lt;subdomain&gt;.workers.dev</code> でアクセス可能(workers.dev サブドメインを事前に有効化しておいてください)。</li>
+            <ol style="padding-left:18px;margin:0">
+              <li><a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">My Profile → API Tokens</a></li>
+              <li><b>Create Token</b> → <code>Edit Cloudflare Workers</code> テンプレ</li>
+              <li>Account Resources で対象アカウントを選んで作成</li>
+              <li>Account ID は Workers ダッシュボード右側に表示</li>
             </ol>
-            <p style="color:var(--muted);font-size:11.5px;margin-top:10px">
-              ※トークンはブラウザのみで保持されます(localStorage)。共有 PC では「クリア」を押してください。
-            </p>
           </div>
         </details>
       </div>
     </div>
 
-    <!-- RIGHT COLUMN ────────────────────────────────────── -->
     <div>
       <div class="panel">
-        <h2>
-          Worker Script
-          <span class="status-pill" id="statusPill"><span class="pulse"></span>idle</span>
-        </h2>
-
+        <h2>Worker Script <span class="status-pill" id="statusPill"><span class="pulse"></span>idle</span></h2>
         <div class="editor">
           <div class="editor-bar">
             <div><span class="dot on"></span><span class="dot"></span><span class="dot"></span> worker.js</div>
             <div><span id="charCount">0</span> chars</div>
           </div>
-          <textarea id="code" spellcheck="false" placeholder="// あなたの Worker コード"></textarea>
+          <textarea id="code" spellcheck="false"></textarea>
         </div>
-
         <div style="margin-top:14px">
           <button id="deploy" class="btn-primary" type="button">▲ Deploy to Cloudflare</button>
         </div>
@@ -295,156 +268,199 @@
     </div>
 
   </div>
+  </div>
 
-  <footer>
-    self-hosted client · all requests go directly from your browser to <b style="color:var(--accent)">api.cloudflare.com</b> · no middleman
-  </footer>
+  <footer>self-hosted client &middot; all requests route through your own proxy Worker &middot; no third party</footer>
 </div>
 
 <script>
-// ── Templates ─────────────────────────────────────────
+const PROXY_TEMPLATE = [
+  '// workers-deploy CORS proxy (generated)',
+  'const SECRET = "__PASSWORD__";',
+  '',
+  'const CORS = {',
+  '  "Access-Control-Allow-Origin": "*",',
+  '  "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",',
+  '  "Access-Control-Allow-Headers": "Authorization,Content-Type,X-Proxy-Secret",',
+  '  "Access-Control-Max-Age": "86400",',
+  '};',
+  '',
+  'export default {',
+  '  async fetch(request) {',
+  '    if (request.method === "OPTIONS") {',
+  '      return new Response(null, { headers: CORS });',
+  '    }',
+  '    if (request.headers.get("X-Proxy-Secret") !== SECRET) {',
+  '      return new Response("Forbidden", { status: 403, headers: CORS });',
+  '    }',
+  '    const url = new URL(request.url);',
+  '    const target = "https://api.cloudflare.com/client/v4" + url.pathname + url.search;',
+  '    const headers = new Headers(request.headers);',
+  '    headers.delete("host");',
+  '    headers.delete("x-proxy-secret");',
+  '    const init = {',
+  '      method: request.method,',
+  '      headers,',
+  '      body: ["GET","HEAD"].includes(request.method) ? null : request.body,',
+  '    };',
+  '    const upstream = await fetch(target, init);',
+  '    const out = new Response(upstream.body, upstream);',
+  '    for (const [k, v] of Object.entries(CORS)) out.headers.set(k, v);',
+  '    return out;',
+  '  },',
+  '};'
+].join('\n');
+
 const TEMPLATES = {
-  hello: `export default {
-  async fetch(request, env, ctx) {
-    return new Response("Hello from Cloudflare Workers! ⚡", {
-      headers: { "content-type": "text/plain; charset=utf-8" }
-    });
-  }
-};`,
-  json: `export default {
-  async fetch(request, env, ctx) {
-    const data = {
-      message: "Hello from the edge",
-      timestamp: new Date().toISOString(),
-      cf: request.cf || null,
-    };
-    return new Response(JSON.stringify(data, null, 2), {
-      headers: { "content-type": "application/json; charset=utf-8" }
-    });
-  }
-};`,
-  redirect: `export default {
-  async fetch(request, env, ctx) {
-    return Response.redirect("https://developers.cloudflare.com/workers/", 302);
-  }
-};`,
-  echo: `export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const info = {
-      method: request.method,
-      url: request.url,
-      pathname: url.pathname,
-      query: Object.fromEntries(url.searchParams),
-      headers: Object.fromEntries(request.headers),
-      cf: request.cf || null,
-    };
-    return new Response(JSON.stringify(info, null, 2), {
-      headers: { "content-type": "application/json; charset=utf-8" }
-    });
-  }
-};`,
-  html: `export default {
-  async fetch(request, env, ctx) {
-    const html = \`<!doctype html>
-<html><head><meta charset="utf-8"><title>Edge</title>
-<style>body{font-family:system-ui;background:#0c0b09;color:#f3ead8;
-display:grid;place-items:center;height:100vh;margin:0}
-h1{font-size:14vw;color:#f38020;margin:0}</style></head>
-<body><h1>⚡</h1></body></html>\`;
-    return new Response(html, {
-      headers: { "content-type": "text/html; charset=utf-8" }
-    });
-  }
-};`,
-  random: `const QUOTES = [
-  "The edge is the new origin.",
-  "Latency is the enemy of UX.",
-  "Cache everything, compute nothing.",
-  "Deploy on Friday. Live dangerously.",
-  "It's just JavaScript. Until it isn't."
-];
-export default {
-  async fetch(request, env, ctx) {
-    const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-    return new Response(JSON.stringify({ quote: q }), {
-      headers: { "content-type": "application/json; charset=utf-8" }
-    });
-  }
-};`
+  hello: 'export default {\n  async fetch(request, env, ctx) {\n    return new Response("Hello from Cloudflare Workers! \u26a1", {\n      headers: { "content-type": "text/plain; charset=utf-8" }\n    });\n  }\n};',
+  json: 'export default {\n  async fetch(request, env, ctx) {\n    const data = {\n      message: "Hello from the edge",\n      timestamp: new Date().toISOString(),\n      cf: request.cf || null,\n    };\n    return new Response(JSON.stringify(data, null, 2), {\n      headers: { "content-type": "application/json; charset=utf-8" }\n    });\n  }\n};',
+  redirect: 'export default {\n  async fetch(request, env, ctx) {\n    return Response.redirect("https://developers.cloudflare.com/workers/", 302);\n  }\n};',
+  echo: 'export default {\n  async fetch(request, env, ctx) {\n    const url = new URL(request.url);\n    const info = {\n      method: request.method,\n      url: request.url,\n      pathname: url.pathname,\n      query: Object.fromEntries(url.searchParams),\n      headers: Object.fromEntries(request.headers),\n    };\n    return new Response(JSON.stringify(info, null, 2), {\n      headers: { "content-type": "application/json; charset=utf-8" }\n    });\n  }\n};',
+  html: 'export default {\n  async fetch(request, env, ctx) {\n    const html = \'<!doctype html><html><head><meta charset="utf-8"><title>Edge</title><style>body{font-family:system-ui;background:#0c0b09;color:#f3ead8;display:grid;place-items:center;height:100vh;margin:0}h1{font-size:14vw;color:#f38020;margin:0}</style></head><body><h1>\u26a1</h1></body></html>\';\n    return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });\n  }\n};',
+  random: 'const QUOTES = [\n  "The edge is the new origin.",\n  "Latency is the enemy of UX.",\n  "Cache everything, compute nothing.",\n];\nexport default {\n  async fetch() {\n    const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];\n    return new Response(JSON.stringify({ quote: q }), {\n      headers: { "content-type": "application/json; charset=utf-8" }\n    });\n  }\n};'
 };
 
-// ── Elements ──────────────────────────────────────────
-const $ = id => document.getElementById(id);
-const tokenEl = $('token'), accountEl = $('account'), nameEl = $('name'),
-      codeEl = $('code'), logEl = $('log'), pill = $('statusPill'),
-      urlPrev = $('urlPreview'), charCount = $('charCount');
+const $ = function(i){ return document.getElementById(i); };
+const setupBanner=$('setupBanner'), setupPassword=$('setupPassword'),
+      proxyCode=$('proxyCode'), copyCode=$('copyCode'),
+      setupUrl=$('setupUrl'), testProxy=$('testProxy'), setupResult=$('setupResult'),
+      deploySection=$('deploySection'),
+      tokenEl=$('token'), accountEl=$('account'), nameEl=$('name'),
+      codeEl=$('code'), logEl=$('log'), pill=$('statusPill'),
+      urlPrev=$('urlPreview'), charCount=$('charCount');
 
-// ── Storage (graceful) ────────────────────────────────
-const SKEY = 'cf-workers-deploy-v1';
-function loadCreds(){
+const SKEY = 'cf-workers-deploy-v3';
+function loadState(){
   try{
-    const raw = localStorage.getItem(SKEY);
-    if(!raw) return;
-    const s = JSON.parse(raw);
-    if(s.token)tokenEl.value=s.token;
-    if(s.account)accountEl.value=s.account;
-    if(s.name)nameEl.value=s.name;
-    if(s.code)codeEl.value=s.code;
-    log('info','保存された認証情報を復元しました。');
+    const s = JSON.parse(localStorage.getItem(SKEY) || '{}');
+    if(s.password) setupPassword.value = s.password;
+    if(s.proxyUrl) setupUrl.value = s.proxyUrl;
+    if(s.token) tokenEl.value = s.token;
+    if(s.account) accountEl.value = s.account;
+    if(s.name) nameEl.value = s.name;
+    if(s.code) codeEl.value = s.code;
+    if(s.setupDone) markSetupDone();
   }catch(e){}
 }
-function saveCreds(){
+function saveState(extra){
   try{
-    localStorage.setItem(SKEY, JSON.stringify({
-      token:tokenEl.value, account:accountEl.value,
-      name:nameEl.value, code:codeEl.value
-    }));
-    log('ok','credentials を保存しました(このブラウザのみ)。');
-  }catch(e){ log('err','保存に失敗しました: '+e.message); }
-}
-function clearCreds(){
-  try{ localStorage.removeItem(SKEY); }catch(e){}
-  tokenEl.value=accountEl.value='';
-  log('warn','保存情報をクリアしました。');
+    const cur = JSON.parse(localStorage.getItem(SKEY) || '{}');
+    const next = Object.assign(cur, {
+      password: setupPassword.value, proxyUrl: setupUrl.value,
+      token: tokenEl.value, account: accountEl.value,
+      name: nameEl.value, code: codeEl.value
+    }, extra || {});
+    localStorage.setItem(SKEY, JSON.stringify(next));
+  }catch(e){}
 }
 
-// ── Logging ───────────────────────────────────────────
+function regenProxyCode(){
+  const p = setupPassword.value.trim() || 'CHANGE_ME_TO_RANDOM_STRING';
+  proxyCode.value = PROXY_TEMPLATE.replace('__PASSWORD__', p);
+}
+setupPassword.addEventListener('input', function(){ regenProxyCode(); saveState(); });
+
+copyCode.addEventListener('click', async function(){
+  if(!setupPassword.value.trim()){
+    alert('まずパスワードを入力してください。');
+    setupPassword.focus();
+    return;
+  }
+  try{
+    await navigator.clipboard.writeText(proxyCode.value);
+  }catch(e){
+    proxyCode.select(); document.execCommand('copy');
+  }
+  copyCode.textContent = 'copied ✓';
+  copyCode.classList.add('copied');
+  setTimeout(function(){ copyCode.textContent='copy'; copyCode.classList.remove('copied'); }, 1800);
+});
+
+testProxy.addEventListener('click', async function(){
+  const url = setupUrl.value.trim().replace(/\/$/,'');
+  const pass = setupPassword.value.trim();
+  if(!url || !pass){
+    setupResult.innerHTML = '<span style="color:var(--err)">URL と パスワードを両方入れてください</span>';
+    return;
+  }
+  if(!/^https:\/\/.+/.test(url)){
+    setupResult.innerHTML = '<span style="color:var(--err)">https:// で始まる URL を入れてください</span>';
+    return;
+  }
+  setupResult.innerHTML = '<span style="color:var(--warn)">テスト中…</span>';
+  testProxy.disabled = true;
+  try{
+    const res = await fetch(url + '/user/tokens/verify', {
+      method:'GET',
+      headers:{ 'X-Proxy-Secret': pass }
+    });
+    if(res.status === 403){
+      setupResult.innerHTML = '<span style="color:var(--err)">✗ パスワード不一致。Worker 側コードの SECRET と同じ値か確認してください。</span>';
+    }else if(res.ok || res.status === 400 || res.status === 401){
+      setupResult.innerHTML = '<span style="color:var(--ok)">✓ プロキシ接続 OK。下のフォームでデプロイできます。</span>';
+      saveState({ setupDone:true });
+      setTimeout(markSetupDone, 600);
+    }else{
+      setupResult.innerHTML = '<span style="color:var(--err)">✗ 予期しないレスポンス: HTTP '+res.status+'</span>';
+    }
+  }catch(err){
+    setupResult.innerHTML = '<span style="color:var(--err)">✗ 接続失敗: '+err.message+' — URL を再確認してください</span>';
+  }finally{
+    testProxy.disabled = false;
+  }
+});
+
+function markSetupDone(){
+  setupBanner.classList.add('done');
+  setupBanner.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'+
+    '<h2>✓ Setup complete</h2>'+
+    '<button class="toggle-setup" id="reopenSetup" type="button">設定を変更</button>'+
+    '</div>';
+  document.getElementById('reopenSetup').addEventListener('click', function(){
+    saveState({ setupDone:false });
+    location.reload();
+  });
+  deploySection.classList.remove('disabled');
+}
+
 function log(type, msg){
   const t = new Date().toTimeString().slice(0,8);
   const line = document.createElement('div');
   line.className = 'line';
-  line.innerHTML = `<span class="ts">${t}</span><span class="${type}">${msg}</span>`;
+  line.innerHTML = '<span class="ts">'+t+'</span><span class="'+type+'">'+msg+'</span>';
   logEl.appendChild(line);
   logEl.scrollTop = logEl.scrollHeight;
 }
-
-// ── Live URL preview ──────────────────────────────────
 function updatePreview(){
   const a = accountEl.value.trim() || '{account_id}';
   const n = nameEl.value.trim() || '{name}';
-  urlPrev.innerHTML = `PUT https://api.cloudflare.com/client/v4/accounts/<span class="acc">${a}</span>/workers/scripts/<span class="acc">${n}</span>`;
+  const p = setupUrl.value.trim().replace(/\/$/,'') || '{proxy}';
+  urlPrev.innerHTML = 'PUT '+p+'/accounts/<span class="acc">'+a+'</span>/workers/scripts/<span class="acc">'+n+'</span>';
 }
-[accountEl,nameEl].forEach(el=>el.addEventListener('input',updatePreview));
-codeEl.addEventListener('input',()=>{ charCount.textContent = codeEl.value.length; });
+[accountEl,nameEl,setupUrl].forEach(function(el){ el.addEventListener('input', function(){ updatePreview(); saveState(); }); });
+[tokenEl].forEach(function(el){ el.addEventListener('input', function(){ saveState(); }); });
+codeEl.addEventListener('input', function(){ charCount.textContent = codeEl.value.length; saveState(); });
 
-// ── Templates ─────────────────────────────────────────
-document.querySelectorAll('[data-tpl]').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
+document.querySelectorAll('[data-tpl]').forEach(function(btn){
+  btn.addEventListener('click', function(){
     const k = btn.dataset.tpl;
     if(codeEl.value.trim() && !confirm('現在のコードを置き換えますか?')) return;
     codeEl.value = TEMPLATES[k];
     charCount.textContent = codeEl.value.length;
-    log('info',`template "${k}" を読み込みました。`);
+    saveState();
+    log('info','template "'+k+'" loaded.');
   });
 });
 
-// ── Save / Clear ──────────────────────────────────────
-$('save').addEventListener('click',saveCreds);
-$('clear').addEventListener('click',clearCreds);
-$('clearLog').addEventListener('click',()=>{ logEl.innerHTML=''; });
+$('save').addEventListener('click', function(){ saveState(); log('ok','credentials saved.'); });
+$('clear').addEventListener('click', function(){
+  tokenEl.value = accountEl.value = '';
+  saveState();
+  log('warn','credentials cleared.');
+});
+$('clearLog').addEventListener('click', function(){ logEl.innerHTML = ''; });
 
-// ── Validation ────────────────────────────────────────
 function validate(){
   const errs = [];
   if(!tokenEl.value.trim()) errs.push('API Token が未入力');
@@ -456,19 +472,16 @@ function validate(){
   return errs;
 }
 
-// ── Deploy ────────────────────────────────────────────
 const deployBtn = $('deploy');
-deployBtn.addEventListener('click', async ()=>{
+deployBtn.addEventListener('click', async function(){
   const errs = validate();
-  if(errs.length){
-    errs.forEach(e=>log('err','✗ '+e));
-    return;
-  }
+  if(errs.length){ errs.forEach(function(e){ log('err','✗ '+e); }); return; }
 
   const token = tokenEl.value.trim();
   const account = accountEl.value.trim();
   const name = nameEl.value.trim();
-  const code = codeEl.value;
+  const proxy = setupUrl.value.trim().replace(/\/$/,'');
+  const secret = setupPassword.value.trim();
 
   deployBtn.disabled = true;
   deployBtn.textContent = '◌ Deploying...';
@@ -476,45 +489,34 @@ deployBtn.addEventListener('click', async ()=>{
   pill.innerHTML = '<span class="pulse"></span>deploying';
   pill.style.color = 'var(--warn)';
   pill.style.borderColor = 'var(--warn)';
+  log('info','▲ deploying "'+name+'" via proxy…');
 
-  log('info',`▲ deploying "${name}" to account ${account.slice(0,6)}…`);
-
-  // multipart/form-data with metadata + module
-  const metadata = {
-    main_module: 'worker.js',
-    compatibility_date: new Date().toISOString().slice(0,10)
-  };
-
+  const metadata = { main_module:'worker.js', compatibility_date: new Date().toISOString().slice(0,10) };
   const form = new FormData();
   form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
-  form.append('worker.js', new Blob([code], {type:'application/javascript+module'}), 'worker.js');
+  form.append('worker.js', new Blob([codeEl.value], {type:'application/javascript+module'}), 'worker.js');
 
-  const url = `https://api.cloudflare.com/client/v4/accounts/${account}/workers/scripts/${name}`;
-
+  const url = proxy + '/accounts/'+account+'/workers/scripts/'+name;
   try{
     const t0 = performance.now();
     const res = await fetch(url, {
       method:'PUT',
-      headers:{ 'Authorization':'Bearer '+token },
+      headers:{ 'Authorization':'Bearer '+token, 'X-Proxy-Secret': secret },
       body: form
     });
-    const ms = Math.round(performance.now()-t0);
-    const data = await res.json().catch(()=>({}));
-
+    const ms = Math.round(performance.now() - t0);
+    const data = await res.json().catch(function(){ return {}; });
     if(res.ok && data.success !== false){
-      log('ok',`✓ deployed in ${ms}ms — script "${name}" is live.`);
-      if(data.result){
-        if(data.result.modified_on) log('info','  modified_on: '+data.result.modified_on);
-        if(data.result.etag) log('info','  etag: '+data.result.etag);
-      }
-      log('info',`→ try: https://${name}.<your-subdomain>.workers.dev`);
+      log('ok','✓ deployed in '+ms+'ms — script "'+name+'" is live.');
+      if(data.result && data.result.modified_on) log('info','  modified_on: '+data.result.modified_on);
+      log('info','→ try: https://'+name+'.<your-subdomain>.workers.dev');
       pill.className = 'status-pill live';
       pill.innerHTML = '<span class="pulse"></span>live';
       pill.style.cssText = '';
     }else{
-      log('err',`✗ HTTP ${res.status} — deploy failed`);
+      log('err','✗ HTTP '+res.status+' — deploy failed');
       if(data.errors && data.errors.length){
-        data.errors.forEach(er=>log('err',`  [${er.code}] ${er.message}`));
+        data.errors.forEach(function(er){ log('err','  ['+er.code+'] '+er.message); });
       }else{
         log('err','  '+JSON.stringify(data).slice(0,400));
       }
@@ -525,7 +527,7 @@ deployBtn.addEventListener('click', async ()=>{
     }
   }catch(err){
     log('err','✗ ネットワークエラー: '+err.message);
-    log('warn','  CORSやネットワーク問題の可能性があります。トークンの権限を確認してください。');
+    log('warn','  プロキシ URL とパスワードを再確認してください。');
     pill.className = 'status-pill';
     pill.innerHTML = '<span class="pulse"></span>error';
     pill.style.color = 'var(--err)';
@@ -536,12 +538,11 @@ deployBtn.addEventListener('click', async ()=>{
   }
 });
 
-// ── Init ──────────────────────────────────────────────
-loadCreds();
+loadState();
+regenProxyCode();
 if(!codeEl.value) codeEl.value = TEMPLATES.hello;
 charCount.textContent = codeEl.value.length;
 updatePreview();
-log('info','ready. credentials を入力して Deploy してください。');
 </script>
 </body>
 </html>
