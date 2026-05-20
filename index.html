@@ -164,6 +164,19 @@
   .section-label::after{content:"";flex:1;height:1px;background:var(--line)}
 
   footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);letter-spacing:.1em;text-align:center}
+
+  /* Storage bar */
+  .storage-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);padding:10px 14px;margin-bottom:14px;
+  }
+  .storage-status{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);letter-spacing:.05em;flex-wrap:wrap}
+  .storage-status .dot{width:8px;height:8px;border-radius:50%;background:var(--err);display:inline-block;transition:background .2s}
+  .storage-status .dot.connected{background:var(--ok)}
+  .storage-status .dot.warning{background:var(--warn)}
+  .storage-path{color:var(--accent);font-weight:500;word-break:break-all}
+  .storage-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .storage-actions button{font-size:10.5px;padding:5px 9px;letter-spacing:.08em}
 </style>
 </head>
 <body>
@@ -177,6 +190,25 @@
     </div>
     <div class="meta"><div>edge &middot; runtime</div><div><b>v4 API</b></div></div>
   </header>
+
+  <!-- STORAGE BAR -->
+  <div class="storage-bar" id="storageBar">
+    <div class="storage-status">
+      <span class="dot" id="storageDot"></span>
+      <span>設定ファイル:</span>
+      <span class="storage-path" id="storagePath">未接続</span>
+    </div>
+    <div class="storage-actions">
+      <button id="storageNew" class="btn-ghost" type="button">📁 新規</button>
+      <button id="storageOpen" class="btn-ghost" type="button">📂 開く</button>
+      <button id="storageReconnect" class="btn-ghost" type="button" style="display:none;border-color:var(--warn);color:var(--warn)">↻ 再接続</button>
+      <button id="storageExport" class="btn-ghost" type="button">⬇ Export</button>
+      <button id="storageImport" class="btn-ghost" type="button">⬆ Import</button>
+      <button id="storageDisconnect" class="btn-ghost" type="button" style="display:none">切断</button>
+      <input type="file" id="storageImportInput" accept=".json,application/json" style="display:none" />
+    </div>
+  </div>
+  <div id="storageHint" style="font-size:11px;color:var(--warn);margin-bottom:18px;display:none"></div>
 
   <!-- SETUP WIZARD -->
   <div class="setup-banner" id="setupBanner">
@@ -284,6 +316,7 @@
           <div class="file-toolbar">
             <button id="addFile" type="button">+ ファイル追加</button>
             <button id="addZip" type="button">+ ZIP 展開</button>
+            <button id="addGithub" type="button">+ GitHub</button>
             <button id="newFile" type="button">+ 新規空ファイル</button>
             <input type="file" id="fileInput" multiple />
             <input type="file" id="zipInput" accept=".zip,application/zip,application/x-zip-compressed" />
@@ -448,6 +481,7 @@ const state = {
   account: '',
   name: 'hello-worker',
   compatDate: new Date().toISOString().slice(0,10),
+  ghToken: '',
   files: [{ name:'worker.js', content: TEMPLATES.hello, isEntry:true, ctype:'application/javascript+module', binary:false }],
   activeFile: 'worker.js',
   bindings: [],
@@ -459,25 +493,51 @@ const state = {
 };
 
 function loadState(){
+  // legacy: try localStorage migration only (real load happens async via storage)
   try{
     const s = JSON.parse(localStorage.getItem(SKEY) || '{}');
     Object.assign(state, s);
-    if(!state.files || !state.files.length) state.files = [{ name:'worker.js', content:TEMPLATES.hello, isEntry:true, ctype:'application/javascript+module', binary:false }];
-    if(!state.bindings) state.bindings = [];
-    if(!state.compatDate) state.compatDate = new Date().toISOString().slice(0,10);
-    if(!state.activeFile) state.activeFile = state.files[0].name;
   }catch(e){}
+  ensureDefaults();
 }
+function ensureDefaults(){
+  if(!state.files || !state.files.length) state.files = [{ name:'worker.js', content:TEMPLATES.hello, isEntry:true, ctype:'application/javascript+module', binary:false }];
+  if(!state.bindings) state.bindings = [];
+  if(!state.compatDate) state.compatDate = new Date().toISOString().slice(0,10);
+  if(!state.activeFile) state.activeFile = state.files[0].name;
+}
+function getSaveData(){
+  return {
+    password: state.password, proxyUrl: state.proxyUrl, setupDone: state.setupDone,
+    token: state.token, account: state.account, name: state.name, compatDate: state.compatDate,
+    ghToken: state.ghToken,
+    files: state.files.map(f => f.binary ? null : f).filter(Boolean),
+    activeFile: state.activeFile, bindings: state.bindings
+  };
+}
+let saveTimer = null;
 function saveState(){
-  try{
-    const toSave = {
-      password: state.password, proxyUrl: state.proxyUrl, setupDone: state.setupDone,
-      token: state.token, account: state.account, name: state.name, compatDate: state.compatDate,
-      files: state.files.map(f => f.binary ? null : f).filter(Boolean), // skip binary files (large)
-      activeFile: state.activeFile, bindings: state.bindings
-    };
-    localStorage.setItem(SKEY, JSON.stringify(toSave));
-  }catch(e){ console.warn('save failed', e); }
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(actualSave, 350);
+}
+async function actualSave(){
+  const data = getSaveData();
+  if(configHandle){
+    try{
+      const writable = await configHandle.createWritable();
+      await writable.write(JSON.stringify(data, null, 2));
+      await writable.close();
+      flashStorageStatus('saved');
+    }catch(err){
+      log('err','設定保存失敗: '+err.message);
+      flashStorageStatus('error');
+      // fallback so data isn't lost
+      try{ localStorage.setItem(SKEY, JSON.stringify(data)); }catch(e){}
+    }
+  }else{
+    // No file connected - use localStorage as temporary fallback with warning shown elsewhere
+    try{ localStorage.setItem(SKEY, JSON.stringify(data)); }catch(e){}
+  }
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -782,6 +842,168 @@ function formatBytes(n){
   if(n < 1024*1024) return (n/1024).toFixed(1)+' KB';
   return (n/1024/1024).toFixed(2)+' MB';
 }
+
+// ──────────────────────────────────────────────────────────────
+// GITHUB INTEGRATION
+// ──────────────────────────────────────────────────────────────
+const GH_DEFAULT_IGNORE = [
+  /^\.git\//, /(^|\/)node_modules\//, /^\.github\//,
+  /(^|\/)package-lock\.json$/, /(^|\/)yarn\.lock$/, /(^|\/)pnpm-lock\.yaml$/, /(^|\/)bun\.lockb$/,
+  /(^|\/)\.gitignore$/, /(^|\/)\.gitattributes$/, /(^|\/)LICENSE(\..*)?$/i, /(^|\/)README(\..*)?$/i,
+  /(^|\/)\.DS_Store$/, /(^|\/)\.env(\..*)?$/, /(^|\/)\.eslintrc.*/, /(^|\/)\.prettierrc.*/,
+  /(^|\/)tsconfig\.json$/, /(^|\/)package\.json$/, /(^|\/)wrangler\.toml$/, /(^|\/)wrangler\.jsonc?$/,
+];
+function shouldIgnore(path){ return GH_DEFAULT_IGNORE.some(re => re.test(path)); }
+
+function parseGitHubUrl(input){
+  input = input.trim().replace(/\.git$/, '');
+  input = input.replace(/^https?:\/\/(www\.)?github\.com\//, '');
+  // Allow owner/repo#branch shorthand
+  let refOverride = null;
+  if(input.includes('#')){
+    const [a, b] = input.split('#');
+    input = a; refOverride = b;
+  }
+  const parts = input.split('/').filter(Boolean);
+  if(parts.length < 2) throw new Error('Invalid GitHub URL. e.g. "owner/repo" or full URL');
+  const owner = parts[0];
+  const repo = parts[1];
+  let ref = refOverride, path = '', file = null;
+  if(parts[2] === 'tree' || parts[2] === 'blob'){
+    ref = parts[3];
+    const rest = parts.slice(4).join('/');
+    if(parts[2] === 'blob') file = rest;
+    else path = rest;
+  }
+  return { owner, repo, ref, path, file };
+}
+
+async function ghFetch(url, token){
+  const headers = { 'Accept':'application/vnd.github+json' };
+  if(token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(url, { headers });
+  if(!res.ok){
+    const txt = await res.text().catch(()=>'');
+    throw new Error('GitHub HTTP '+res.status+': '+(txt.slice(0,160) || url));
+  }
+  return res;
+}
+async function getDefaultBranch(owner, repo, token){
+  const res = await ghFetch('https://api.github.com/repos/'+owner+'/'+repo, token);
+  const data = await res.json();
+  return data.default_branch || 'main';
+}
+
+async function fetchFromGithub(input, token, opts){
+  opts = opts || {};
+  const parsed = parseGitHubUrl(input);
+  const branch = parsed.ref || await getDefaultBranch(parsed.owner, parsed.repo, token);
+  log('info','GitHub: '+parsed.owner+'/'+parsed.repo+' @ '+branch+(parsed.path ? ' /'+parsed.path : '')+(parsed.file ? ' /'+parsed.file : ''));
+
+  let entries; // [{ path, type }]
+  if(parsed.file){
+    entries = [{ path: parsed.file, type:'blob' }];
+  }else{
+    // Recursive tree
+    const treeRes = await ghFetch('https://api.github.com/repos/'+parsed.owner+'/'+parsed.repo+'/git/trees/'+encodeURIComponent(branch)+'?recursive=1', token);
+    const tree = await treeRes.json();
+    if(tree.truncated) log('warn','  ⚠ tree truncated (very large repo). Some files may be missing.');
+    entries = (tree.tree || []).filter(t=>t.type === 'blob');
+    if(parsed.path){
+      entries = entries.filter(e=> e.path === parsed.path || e.path.startsWith(parsed.path + '/'));
+    }
+    if(opts.skipCommon !== false){
+      entries = entries.filter(e=> !shouldIgnore(e.path));
+    }
+  }
+
+  log('info','  fetching '+entries.length+' files...');
+  let added = 0;
+  // sequential to avoid hitting rate limits; raw.githubusercontent isn't strictly rate-limited but be safe
+  for(const e of entries){
+    const relName = parsed.path
+      ? (e.path === parsed.path ? e.path.split('/').pop() : e.path.slice(parsed.path.length + 1))
+      : e.path;
+    if(!relName) continue;
+    const text = isText(relName);
+    const rawUrl = 'https://raw.githubusercontent.com/'+parsed.owner+'/'+parsed.repo+'/'+branch+'/'+e.path;
+    const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+    try{
+      const res = await fetch(rawUrl, { headers });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const content = text ? await res.text() : await res.arrayBuffer();
+      upsertFile({
+        name: relName,
+        content,
+        binary: !text,
+        size: content.byteLength || content.length || 0,
+        isEntry: false,
+        ctype: inferCtype(relName)
+      });
+      added++;
+    }catch(err){
+      log('warn','  ✗ '+relName+': '+err.message);
+    }
+  }
+
+  // Auto-detect entry point if none of the existing files is the entry
+  const candidates = ['worker.js', 'index.js', 'src/worker.js', 'src/index.js', 'main.js'];
+  if(!state.files.some(f=>f.isEntry) || state.files.find(f=>f.isEntry)?.binary){
+    for(const c of candidates){
+      const found = state.files.find(f=>f.name === c || f.name.endsWith('/'+c));
+      if(found){ state.files.forEach(f=>f.isEntry=false); found.isEntry = true; break; }
+    }
+    if(!state.files.some(f=>f.isEntry) && state.files.length){ state.files[0].isEntry = true; }
+  }
+
+  return added;
+}
+
+$('addGithub').addEventListener('click', ()=>{
+  const wrap = document.createElement('div');
+  wrap.innerHTML =
+    '<label><span>GitHub URL または owner/repo</span>'+
+      '<input type="text" id="ghUrl" placeholder="owner/repo  または  https://github.com/owner/repo/tree/main/src" />'+
+    '</label>'+
+    '<label><span>GitHub Token <span class="hint" style="cursor:default;color:var(--muted)">(任意・private repo / レート制限回避)</span></span>'+
+      '<input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx" />'+
+    '</label>'+
+    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
+      '<input type="checkbox" id="ghSkipCommon" checked style="width:auto" />'+
+      '<span style="text-transform:none;letter-spacing:0;color:var(--ink);font-size:12px">node_modules / package.json / lock 系 / README などを自動スキップ</span>'+
+    '</label>'+
+    '<p style="font-size:11px;color:var(--muted);margin:0 0 10px">'+
+      '対応URL: <code>owner/repo</code> / <code>owner/repo#branch</code> / <code>github.com/owner/repo</code> /<br>'+
+      '<code>github.com/owner/repo/tree/branch/path</code> / <code>github.com/owner/repo/blob/branch/path/file.js</code>'+
+    '</p>';
+  // pre-fill token if saved
+  setTimeout(()=>{ wrap.querySelector('#ghToken').value = state.ghToken || ''; }, 0);
+
+  const submit = document.createElement('div');
+  submit.className = 'submit-row';
+  submit.innerHTML = '<button type="button" data-cancel>キャンセル</button><button type="button" class="btn-primary" data-ok style="width:auto;padding:10px 18px">取得</button>';
+  wrap.appendChild(submit);
+  submit.querySelector('[data-cancel]').addEventListener('click', closeModal);
+  submit.querySelector('[data-ok]').addEventListener('click', async ()=>{
+    const url = wrap.querySelector('#ghUrl').value.trim();
+    const ghTok = wrap.querySelector('#ghToken').value.trim();
+    const skip = wrap.querySelector('#ghSkipCommon').checked;
+    if(!url){ alert('URL を入力してください'); return; }
+    state.ghToken = ghTok; saveState();
+    const okBtn = submit.querySelector('[data-ok]');
+    okBtn.disabled = true; okBtn.textContent = '取得中...';
+    try{
+      const added = await fetchFromGithub(url, ghTok || null, { skipCommon: skip });
+      log('ok','✓ GitHub: '+added+' files added');
+      saveState(); renderFiles(); loadActiveFileIntoEditor();
+      closeModal();
+    }catch(err){
+      log('err','✗ GitHub fetch: '+err.message);
+      okBtn.disabled = false; okBtn.textContent = '取得';
+    }
+  });
+  openModal('GitHub から取得', wrap);
+});
 
 // ──────────────────────────────────────────────────────────────
 // BINDINGS (in metadata.bindings on deploy)
@@ -1278,9 +1500,242 @@ $('deploy').addEventListener('click', async ()=>{
 $('clearLog').addEventListener('click', ()=>{ logEl.innerHTML=''; });
 
 // ──────────────────────────────────────────────────────────────
+// FILE-BASED STORAGE (File System Access API)
+// ──────────────────────────────────────────────────────────────
+const FSA_SUPPORTED = typeof window.showSaveFilePicker === 'function' && typeof window.showOpenFilePicker === 'function';
+let configHandle = null;
+
+const IDB_NAME = 'workers-deploy-cfg';
+const IDB_STORE = 'handles';
+function openIDB(){
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(IDB_NAME, 1);
+    r.onupgradeneeded = ()=> r.result.createObjectStore(IDB_STORE);
+    r.onsuccess = ()=> res(r.result);
+    r.onerror = ()=> rej(r.error);
+  });
+}
+async function idbGet(key){
+  try{
+    const db = await openIDB();
+    return await new Promise(res=>{
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).get(key);
+      req.onsuccess = ()=> res(req.result || null);
+      req.onerror = ()=> res(null);
+    });
+  }catch(e){ return null; }
+}
+async function idbPut(key, val){
+  try{
+    const db = await openIDB();
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(val, key);
+    return new Promise(r=> tx.oncomplete = r);
+  }catch(e){}
+}
+async function idbDel(key){
+  try{
+    const db = await openIDB();
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    return new Promise(r=> tx.oncomplete = r);
+  }catch(e){}
+}
+
+async function readHandle(handle){
+  try{
+    const file = await handle.getFile();
+    const text = await file.text();
+    return text ? JSON.parse(text) : {};
+  }catch(e){
+    log('warn','設定ファイル読み込み失敗: '+e.message);
+    return {};
+  }
+}
+
+function updateStorageUI(){
+  const dot = $('storageDot'), path = $('storagePath'), hint = $('storageHint');
+  const reconnect = $('storageReconnect'), disconnect = $('storageDisconnect');
+  if(configHandle){
+    dot.className = 'dot connected';
+    path.textContent = configHandle.name;
+    hint.style.display = 'none';
+    reconnect.style.display = 'none';
+    disconnect.style.display = '';
+  }else{
+    dot.className = 'dot';
+    path.textContent = '未接続 (localStorage 一時保存)';
+    if(FSA_SUPPORTED){
+      hint.style.display = '';
+      hint.innerHTML = '⚠ 設定ファイルが未接続です。「📁 新規」または「📂 開く」で端末上のファイルに紐付けてください。<br>未接続時はブラウザの localStorage に一時保存され、ブラウザ履歴削除で消える可能性があります。';
+    }else{
+      hint.style.display = '';
+      hint.innerHTML = '⚠ このブラウザは File System Access API 非対応 (Chrome/Edge を推奨)。Export / Import ボタンで手動バックアップしてください。';
+    }
+    reconnect.style.display = 'none';
+    disconnect.style.display = 'none';
+  }
+}
+function flashStorageStatus(kind){
+  const dot = $('storageDot');
+  if(kind === 'saved'){
+    const prev = dot.className;
+    dot.className = 'dot warning';
+    setTimeout(()=>{ dot.className = prev; }, 220);
+  }else if(kind === 'error'){
+    dot.className = 'dot';
+    dot.style.background = 'var(--err)';
+    setTimeout(()=>{ dot.style.background = ''; updateStorageUI(); }, 1500);
+  }
+}
+
+async function applyLoadedState(data){
+  Object.assign(state, data);
+  ensureDefaults();
+  // Refresh UI
+  setupPassword.value = state.password || '';
+  setupUrl.value = state.proxyUrl || '';
+  tokenEl.value = state.token || '';
+  accountEl.value = state.account || '';
+  nameEl.value = state.name || '';
+  compatDateEl.value = state.compatDate || '';
+  renderFiles(); loadActiveFileIntoEditor(); renderBindings();
+  regenProxyCode();
+  if(state.setupDone && state.proxyUrl){
+    markSetupDone();
+  }else{
+    setupBanner.classList.remove('done');
+    deploySection.classList.add('disabled');
+  }
+}
+
+async function connectNewFile(){
+  if(!FSA_SUPPORTED){ alert('このブラウザは File System Access API 非対応'); return; }
+  try{
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'workers-deploy.json',
+      types:[{ description:'Workers Deploy config', accept:{ 'application/json':['.json'] } }]
+    });
+    configHandle = handle;
+    await idbPut('config', handle);
+    // Write current state (or migrated localStorage) to the new file
+    await actualSave();
+    // Clear localStorage now that we have a file
+    try{ localStorage.removeItem(SKEY); }catch(e){}
+    updateStorageUI();
+    log('ok','✓ 設定ファイル作成: '+handle.name);
+  }catch(e){
+    if(e.name !== 'AbortError') log('err','新規作成失敗: '+e.message);
+  }
+}
+async function connectExistingFile(){
+  if(!FSA_SUPPORTED){ alert('このブラウザは File System Access API 非対応'); return; }
+  try{
+    const [handle] = await window.showOpenFilePicker({
+      types:[{ description:'Workers Deploy config', accept:{ 'application/json':['.json'] } }],
+      multiple:false
+    });
+    // Verify write permission
+    const perm = await handle.requestPermission({ mode:'readwrite' });
+    if(perm !== 'granted'){ log('err','書き込み権限が拒否されました'); return; }
+    configHandle = handle;
+    await idbPut('config', handle);
+    const data = await readHandle(handle);
+    await applyLoadedState(data);
+    try{ localStorage.removeItem(SKEY); }catch(e){}
+    updateStorageUI();
+    log('ok','✓ 設定ファイル接続: '+handle.name);
+  }catch(e){
+    if(e.name !== 'AbortError') log('err','開けませんでした: '+e.message);
+  }
+}
+async function disconnectFile(){
+  if(!confirm('設定ファイルから切断しますか?\n(ファイル自体は削除されません)')) return;
+  configHandle = null;
+  await idbDel('config');
+  updateStorageUI();
+  log('warn','設定ファイルを切断しました (以降は localStorage に一時保存)');
+}
+async function exportConfig(){
+  const data = configHandle ? await readHandle(configHandle) : getSaveData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'workers-deploy.json';
+  a.click();
+  setTimeout(()=> URL.revokeObjectURL(a.href), 1000);
+  log('ok','✓ Export: workers-deploy.json をダウンロードしました');
+}
+async function importConfig(file){
+  try{
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if(!confirm('現在の設定を読み込んだ内容で上書きしますか?')) return;
+    await applyLoadedState(data);
+    await actualSave();
+    log('ok','✓ Import: '+file.name);
+  }catch(e){ log('err','✗ Import: '+e.message); }
+}
+
+async function tryRestoreFile(){
+  if(!FSA_SUPPORTED) return;
+  const handle = await idbGet('config');
+  if(!handle) return;
+  try{
+    const perm = await handle.queryPermission({ mode:'readwrite' });
+    if(perm === 'granted'){
+      configHandle = handle;
+      const data = await readHandle(handle);
+      if(Object.keys(data).length) await applyLoadedState(data);
+      updateStorageUI();
+    }else{
+      // need user gesture
+      $('storageReconnect').style.display = '';
+      $('storagePath').textContent = handle.name + ' (再接続が必要)';
+      $('storageDot').className = 'dot warning';
+      $('storageHint').style.display = '';
+      $('storageHint').innerHTML = '↻ 「再接続」を押すと前回の設定ファイル <b>'+escapeHtml(handle.name)+'</b> へのアクセス許可を再要求します。';
+      // bind one-shot reconnect
+      $('storageReconnect').onclick = async ()=>{
+        try{
+          const p = await handle.requestPermission({ mode:'readwrite' });
+          if(p === 'granted'){
+            configHandle = handle;
+            const data = await readHandle(handle);
+            if(Object.keys(data).length) await applyLoadedState(data);
+            try{ localStorage.removeItem(SKEY); }catch(e){}
+            updateStorageUI();
+            log('ok','✓ 設定ファイル再接続: '+handle.name);
+          }else{
+            log('err','権限が拒否されました');
+          }
+        }catch(e){ log('err','再接続失敗: '+e.message); }
+      };
+    }
+  }catch(e){
+    // handle may have been deleted externally
+    await idbDel('config');
+  }
+}
+
+$('storageNew').addEventListener('click', connectNewFile);
+$('storageOpen').addEventListener('click', connectExistingFile);
+$('storageDisconnect').addEventListener('click', disconnectFile);
+$('storageExport').addEventListener('click', exportConfig);
+$('storageImport').addEventListener('click', ()=> $('storageImportInput').click());
+$('storageImportInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(file) await importConfig(file);
+});
+
+// ──────────────────────────────────────────────────────────────
 // INIT
 // ──────────────────────────────────────────────────────────────
 loadState();
+updateStorageUI();
+tryRestoreFile();  // async, will update UI when done
 if(!state.password){ state.password = generatePassword(); saveState(); }
 setupPassword.value = state.password;
 setupUrl.value = state.proxyUrl || '';
